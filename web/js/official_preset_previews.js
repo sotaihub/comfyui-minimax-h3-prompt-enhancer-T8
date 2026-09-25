@@ -86,6 +86,16 @@ const PRESETS = {
         required_anchors: ["开场前段发生手绘与实拍物体接触", "同一实体在变形中保持连续身份", "沿真实空间留下可见手绘痕迹", "手持摄影机稍微延迟追随且保持轻松基调"],
     },
 };
+const PRESET_UI_ALIASES = {
+    "Minimalist Product Advertisement": "极简产品广告",
+    "3D Animation Short": "3D 动画短片",
+    "Brand Promotional Video": "品牌宣传短片",
+    "Official Music Video Kinetic Typography": "音乐 MV 动态字幕（官方）",
+    "Two-Player Co-op Game Intro": "双人合作游戏开场",
+    "Paper-Collage Explainer": "纸拼贴讲解",
+    "Papercraft Stop-Motion Explainer": "立体纸艺停格讲解",
+    "Hand-Drawn and Live-Action Fusion": "手绘实拍融合",
+};
 
 
 function previewUrl(filename) {
@@ -94,9 +104,9 @@ function previewUrl(filename) {
 
 
 function previewModel(value) {
-    const preset = PRESETS[value];
+    const preset = PRESETS[value] || PRESETS[PRESET_UI_ALIASES[value]];
     if (!preset) {
-        const auto = value === "AUTO（根据意图判断）";
+        const auto = value === "AUTO (Infer from User Intent)" || value === "AUTO（根据意图判断）";
         return {
             authority: "MiniMax 官方创意预设",
             title: value || "MiniMax 官方创意预设",
@@ -172,7 +182,7 @@ export function addOfficialPresetUI(node, widget, promptWidget, refreshSize) {
     domWidget.serializeValue = () => undefined;
 
     const update = (value = widget.value) => {
-        const preset = PRESETS[value];
+        const preset = PRESETS[value] || PRESETS[PRESET_UI_ALIASES[value]];
         if (!preset || node.t8IsT8CaseTemplateActive?.()) {
             setDomWidgetVisible(domWidget, false);
             clearTemplateDetail(root);

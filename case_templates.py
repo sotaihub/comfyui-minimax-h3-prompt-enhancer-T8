@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-NO_CASE_TEMPLATE = "无（不使用 T8 案例）"
+NO_CASE_TEMPLATE = "None (not using T8 case)"
 CATALOG_PATH = Path(__file__).resolve().parent / "case_templates" / "catalog.json"
 TARGETS = {"h3", "seedance20"}
 SECRET_RE = re.compile(r"\bsk-[A-Za-z0-9_-]{16,}\b")

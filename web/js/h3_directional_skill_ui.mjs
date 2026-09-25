@@ -1,12 +1,12 @@
 // Shared presentation only. Each enhancer retains its own output compiler.
 export const DIRECTIONAL_SKILLS = Object.freeze([
-    { id: "none", label: "关闭 / Off", summary: "按原来的场景与模板设置增强提示词。" },
-    { id: "continuous_combat", label: "Fisher-连续战斗长镜头 / Continuous combat", legacyLabel: "连续战斗长镜头 / Continuous combat", summary: "连续摄影路径、攻防起伏、空间与受击状态承接。", example: "例 / Example: 双剑客走廊交锋，一镜到底 / Corridor sword duel, one take." },
-    { id: "high_density_combat", label: "土豆-高密度连续攻防 / High-density combat", legacyLabel: "高密度连续攻防 / High-density combat", summary: "按已有武器与能力编排攻防，让上一动作结果触发下一动作。", example: "例 / Example: 两人徒手连续攻防8秒 / Unarmed duel, 8s nonstop." },
-    { id: "cinematic_gunfight", label: "兔子-电影枪战导演 / Cinematic gunfight", legacyLabel: "电影枪战导演 / Cinematic gunfight", summary: "围绕人物目标组织枪战、空间、动作回应与声音。", example: "例 / Example: 雨夜枪战掩护同伴撤离 / Rainy gunfight, cover an escape." },
-    { id: "ning_wenwu", label: "宁版-文武双全 / Ning · Drama & Action", summary: "文戏看信息与反应，武戏看发力与受力；围绕关键变化选择观看重点。", example: "例 / Example: 说完原句后拔剑，但不出手 / Speak, then draw the sword without attacking." },
-    { id: "drama_scene", label: "戏剧场面｜关系与潜台词 / Dramatic scene", summary: "对白、沉默与已有动作表达关系；安静和无回应也成立。 / Words, silence and actions carry relationships; no forced conflict.", example: "例 / Example: 推回辞职信，原句‘明天的会，你还来吗？’ / Return the resignation letter; keep the supplied invitation." },
-    { id: "situational_drama", label: "情境戏剧｜处境与铺垫回收 / Situational drama", summary: "围绕小目标组织应对与期待回收；不默认搞笑或反转。 / Develop a situation and its response; comedy is optional.", example: "例 / Example: 创作两人抬桌过门、礼让错位后协作；无对白 / Create a warm, silent table-moving coordination scene." },
+    { id: "none", label: "Off", legacyDisplayLabel: "关闭 / Off", legacyLabels: ["关闭 / Off"], summary: "Use the node's existing scene and template settings." },
+    { id: "continuous_combat", label: "Continuous Combat Long Take", legacyDisplayLabel: "Fisher-连续战斗长镜头 / Continuous combat", legacyLabels: ["Fisher-连续战斗长镜头 / Continuous combat", "连续战斗长镜头 / Continuous combat"], summary: "Use a continuous camera path with readable attack-and-defense escalation, spatial continuity, and impact follow-through.", example: "Example: Two sword fighters clash in a corridor in one continuous take." },
+    { id: "high_density_combat", label: "High-Density Continuous Combat", legacyDisplayLabel: "土豆-高密度连续攻防 / High-density combat", legacyLabels: ["土豆-高密度连续攻防 / High-density combat", "高密度连续攻防 / High-density combat"], summary: "Build exchanges from the supplied weapons and abilities so each action's result triggers the next.", example: "Example: An 8-second nonstop unarmed duel." },
+    { id: "cinematic_gunfight", label: "Cinematic Gunfight Direction", legacyDisplayLabel: "兔子-电影枪战导演 / Cinematic gunfight", legacyLabels: ["兔子-电影枪战导演 / Cinematic gunfight", "电影枪战导演 / Cinematic gunfight"], summary: "Organize the gunfight, space, action responses, and sound around the characters' objectives.", example: "Example: Cover a teammate's escape during a rainy-night gunfight." },
+    { id: "ning_wenwu", label: "Ning - Drama and Action", legacyDisplayLabel: "宁版-文武双全 / Ning · Drama & Action", legacyLabels: ["宁版-文武双全 / Ning · Drama & Action"], summary: "Use information and reaction for dramatic beats, force and impact for action, and emphasize key changes.", example: "Example: Draw a sword after the supplied line, but do not attack." },
+    { id: "drama_scene", label: "Dramatic Scene - Relationships and Subtext", legacyDisplayLabel: "戏剧场面｜关系与潜台词 / Dramatic scene", legacyLabels: ["戏剧场面｜关系与潜台词 / Dramatic scene"], summary: "Let dialogue, silence, and established actions express relationships without forcing conflict.", example: "Example: Return a resignation letter and preserve the supplied invitation." },
+    { id: "situational_drama", label: "Situational Drama - Setup and Payoff", legacyDisplayLabel: "情境戏剧｜处境与铺垫回收 / Situational drama", legacyLabels: ["情境戏剧｜处境与铺垫回收 / Situational drama"], summary: "Develop a small objective, response, and payoff without assuming comedy or a twist.", example: "Example: Two people move a table through a doorway, misread who yields, then coordinate silently." },
 ]);
 
 export function directionalSkillId(value) {
@@ -17,12 +17,13 @@ export function directionalSkillId(value) {
     const text = original.trim();
     // Preserve unknown values for the backend's explicit, sanitized validation.
     // An unrecognized saved selection must never silently become Off.
-    return DIRECTIONAL_SKILLS.find((item) => item.id === text || item.label === text || item.legacyLabel === text)?.id || (text ? original : "none");
+    return DIRECTIONAL_SKILLS.find((item) => item.id === text || item.label === text || item.legacyLabels?.includes(text))?.id || (text ? original : "none");
 }
 
-export function directionalSkillLabel(value) {
+export function directionalSkillLabel(value, english = false) {
     const id = directionalSkillId(value);
-    return DIRECTIONAL_SKILLS.find((item) => item.id === id)?.label ?? id;
+    const skill = DIRECTIONAL_SKILLS.find((item) => item.id === id);
+    return skill ? (english ? skill.label : skill.legacyDisplayLabel) : id;
 }
 
 export function isDirectionalSkillEnabled(value) {
@@ -34,24 +35,24 @@ export const DIRECTIONAL_HELP_HEIGHT = 120;
 
 export function directionalSkillDescription(value, target = "h3") {
     const skill = DIRECTIONAL_SKILLS.find((item) => item.id === directionalSkillId(value));
-    const format = target === "seedance20" ? "Seedance 原有格式保留。" : "H3 官方核心与所选输出格式保留。";
-    if (!skill) return `未知定向技能，请重新选择 / Unknown skill; please select again.\n${format}\n未自动改为关闭，也未启用其他技能；原选择保留用于校验。`;
+    const format = target === "seedance20" ? "The existing Seedance output format is preserved." : "The H3 core contract and selected output format are preserved.";
+    if (!skill) return `Unknown directing Skill. Select an available option again.\n${format}\nThe selection was not silently disabled or replaced; it remains available for validation.`;
     const priority = target === "seedance20"
-        ? "T8 案例、手动模板本次暂停；关闭后恢复原选择。"
-        : "官方场景、T8 案例、手动模板本次暂停；关闭后恢复原选择。";
+        ? "T8 cases and manual templates are paused for this run and resume when this Skill is disabled."
+        : "Official scene presets, T8 cases, and manual templates are paused for this run and resume when this Skill is disabled.";
     return [
-        skill.id === "none" ? "定向创作：关闭 / Off" : `当前创作来源：${skill.label}（非官方）`,
+        skill.id === "none" ? "Directional creation: Off" : `Active creation profile: ${skill.label} (unofficial)`,
         ...(skill.example ? [skill.example] : []),
         skill.summary,
         ...(["drama_scene", "situational_drama"].includes(skill.id)
-            ? ["原句默认保留；仅明确要求时创作缺失对白。角色圣经选填。 / Keep supplied lines; new dialogue needs an explicit request. Bible optional."] : []),
+            ? ["Preserve supplied lines by default; add dialogue only when explicitly requested. Character Performance Bible is optional."] : []),
         format,
-        skill.id === "none" ? "选择一种定向技能即可，无需新增连线或填写表格。" : priority,
-        "恢复上次结果不会按当前技能重新生成。",
+        skill.id === "none" ? "Select a directing Skill to enable it; no extra connection or form is required." : priority,
+        "Restoring the previous result does not regenerate it with the current Skill.",
     ].join("\n");
 }
 
-export function addDirectionalSkillUI(node, skillWidget, { target = "h3", onChange } = {}) {
+export function addDirectionalSkillUI(node, skillWidget, { target = "h3", onChange, english = false } = {}) {
     if (!skillWidget || node.t8DirectionalSkillUI) return node.t8DirectionalSkillUI || null;
     const root = document.createElement("div");
     root.style.cssText = "box-sizing:border-box;height:120px;min-height:120px;max-height:120px;padding:8px 10px;overflow:auto;white-space:pre-wrap;font:12px/17px sans-serif;color:#ddd;background:#202832;border:1px solid #496784;border-radius:6px;";
@@ -71,21 +72,21 @@ export function addDirectionalSkillUI(node, skillWidget, { target = "h3", onChan
     // Legacy LiteGraph reads computeSize rather than computeLayoutSize.
     detail.computeSize = () => [0, DIRECTIONAL_HELP_HEIGHT];
     detail.serializeValue = () => undefined;
-    skillWidget.label = "定向创作 Skill（非官方）";
-    skillWidget.tooltip = "仅选择一种创作方法；中文/English、原有模型格式、素材与用户明确要求仍保留。关闭后恢复原模板设置。";
+    skillWidget.label = "Directional Creation Skill (Unofficial)";
+    skillWidget.tooltip = "Select one creation method. The output language, model format, media, and explicit user requirements remain unchanged. Disable it to restore the original template settings.";
     const originals = new Map();
     for (const name of ["case_template", "prompt_mode", "reference_template"]) {
         const widget = node.widgets?.find((item) => item.name === name);
         if (widget) originals.set(widget, { label: widget.label, tooltip: widget.tooltip });
     }
     const update = () => {
-        skillWidget.value = directionalSkillLabel(skillWidget.value);
+        skillWidget.value = directionalSkillLabel(skillWidget.value, english);
         const active = isDirectionalSkillEnabled(skillWidget.value);
         root.textContent = directionalSkillDescription(skillWidget.value, target);
         for (const [widget, original] of originals) {
-            widget.label = active ? `${original.label || widget.name}（定向技能优先，当前暂停）` : original.label;
+            widget.label = active ? `${original.label || widget.name} (Directional Skill takes priority; paused)` : original.label;
             widget.tooltip = active
-                ? "当前定向创作 Skill 优先；原选择和内容已保留，关闭定向技能后恢复。"
+                ? "The directional creation Skill takes priority. The original selection and content are preserved and resume when this Skill is disabled."
                 : original.tooltip;
         }
         node.setDirtyCanvas?.(true, true);

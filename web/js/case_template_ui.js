@@ -290,8 +290,15 @@ export function renderTemplateDetail(
 }
 
 
-export async function addCaseTemplateUI(node, caseWidget, promptWidget, refreshSize) {
+export async function addCaseTemplateUI(
+    node,
+    caseWidget,
+    promptWidget,
+    refreshSize,
+    { useIds = false, noneValue = NO_CASE_TEMPLATE } = {},
+) {
     if (!caseWidget || !promptWidget) return null;
+    const valueForTemplate = (template) => useIds ? template.id : template.label;
     const root = createTemplateDetailCard();
     root.textContent = "正在读取非官方模板说明…";
     const domWidget = node.addDOMWidget("t8_case_template_details", "custom", root, {
@@ -315,7 +322,7 @@ export async function addCaseTemplateUI(node, caseWidget, promptWidget, refreshS
         catalog = await fetchCatalog();
     } catch (error) {
         root.textContent = `模板说明加载失败：${error.message}`;
-        setDomWidgetVisible(domWidget, caseWidget.value !== NO_CASE_TEMPLATE);
+        setDomWidgetVisible(domWidget, caseWidget.value !== noneValue);
         refreshSize?.();
         return domWidget;
     }
@@ -329,10 +336,10 @@ export async function addCaseTemplateUI(node, caseWidget, promptWidget, refreshS
         }
     }
     node.t8CaseCatalog = catalog;
-    node.t8CaseTemplateId = () => byLabel.get(caseWidget.value)?.id || caseWidget.value || NO_CASE_TEMPLATE;
+    node.t8CaseTemplateId = () => byLabel.get(caseWidget.value)?.id || byId.get(caseWidget.value)?.id || caseWidget.value || noneValue;
     node.t8RestoreCaseTemplate = (value) => {
         const template = byLabel.get(value) || byId.get(value);
-        if (template) caseWidget.value = template.label;
+        if (template) caseWidget.value = valueForTemplate(template);
     };
     if (node.t8PendingCaseTemplateValue) {
         node.t8RestoreCaseTemplate(node.t8PendingCaseTemplateValue);
@@ -386,7 +393,7 @@ export async function addCaseTemplateUI(node, caseWidget, promptWidget, refreshS
             setDomWidgetVisible(domWidget, false);
             clearTemplateDetail(root);
         } else {
-            if (caseWidget.value !== template.label) caseWidget.value = template.label;
+            if (caseWidget.value !== valueForTemplate(template)) caseWidget.value = valueForTemplate(template);
             renderTemplateDetail(root, template, promptWidget, node, refreshSize);
             setDomWidgetVisible(domWidget, true);
         }
@@ -407,8 +414,8 @@ export async function addCaseTemplateUI(node, caseWidget, promptWidget, refreshS
             catalog,
             selectedValue: caseWidget.value,
             onSelect: (template) => {
-                caseWidget.value = template.label;
-                caseWidget.callback?.(template.label);
+                caseWidget.value = valueForTemplate(template);
+                caseWidget.callback?.(caseWidget.value);
                 node.graph?.change?.();
                 node.setDirtyCanvas(true, true);
             },
@@ -433,8 +440,8 @@ export async function addCaseTemplateUI(node, caseWidget, promptWidget, refreshS
                 },
                 initialCategory: "推荐 Top-3",
                 onSelect: (template) => {
-                    caseWidget.value = template.label;
-                    caseWidget.callback?.(template.label);
+                    caseWidget.value = valueForTemplate(template);
+                    caseWidget.callback?.(caseWidget.value);
                     node.graph?.change?.();
                     node.setDirtyCanvas(true, true);
                 },

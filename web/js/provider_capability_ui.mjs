@@ -3,10 +3,17 @@ const AI_WORKSHOP_API_MODE_PREFIX = "贞贞的AI工坊";
 const OPENAI_API_MODE = "OpenAI兼容接口（备用）";
 const LOCAL_QWEN_API_MODE = "本地 GGUF（llama.cpp / Qwen，离线）";
 const LEGACY_LOCAL_QWEN_API_MODE = "本地 Qwen3.8-27B（GGUF，离线）";
+const API_MODE_ALIASES = {
+    "Seedance (Recommended)": SEEDANCE_API_MODE,
+    "T8 AI Workshop (Images / Video)": "贞贞的AI工坊（图片/视频）",
+    "OpenAI-Compatible API (Backup)": OPENAI_API_MODE,
+    "Local GGUF (llama.cpp / Qwen, Offline)": LOCAL_QWEN_API_MODE,
+};
 
 
 export function providerCapabilitySummary(apiMode, baseUrl = "", { textOnly = false } = {}) {
-    const mode = String(apiMode || "");
+    const rawMode = String(apiMode || "");
+    const mode = API_MODE_ALIASES[rawMode] || rawMode;
     if ([LOCAL_QWEN_API_MODE, LEGACY_LOCAL_QWEN_API_MODE].includes(mode)) {
         return {
             profile: "local-qwen-verified",

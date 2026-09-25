@@ -17,21 +17,23 @@ import {
 test("directional choices round-trip stable IDs and retain each model's format ownership", () => {
     for (const skill of DIRECTIONAL_SKILLS) {
         assert.equal(directionalSkillId(skill.label), skill.id);
-        assert.equal(directionalSkillLabel(skill.id), skill.label);
+        assert.equal(directionalSkillLabel(skill.id, true), skill.label);
+        assert.equal(directionalSkillLabel(skill.id), skill.legacyDisplayLabel);
     }
     for (const empty of [undefined, null, "", " \t\n"]) {
         assert.equal(directionalSkillId(empty), "none");
         assert.equal(directionalSkillLabel(empty), "关闭 / Off");
+        assert.equal(directionalSkillLabel(empty, true), "Off");
     }
-    assert.equal(isDirectionalSkillEnabled("关闭 / Off"), false);
-    assert.match(directionalSkillDescription("cinematic_gunfight"), /H3 官方核心/);
+    assert.equal(isDirectionalSkillEnabled("Off"), false);
+    assert.match(directionalSkillDescription("cinematic_gunfight"), /H3 core contract/);
     const seedance = directionalSkillDescription("cinematic_gunfight", "seedance20");
-    assert.match(seedance, /Seedance 原有格式保留/);
+    assert.match(seedance, /existing Seedance output format is preserved/);
     assert.doesNotMatch(seedance, /H3/);
     for (const skill of DIRECTIONAL_SKILLS.slice(1)) {
         const lines = directionalSkillDescription(skill.id).split("\n");
-        assert.match(lines[1], /^例 \/ Example:/, "example is immediately visible below the selected source");
-        assert.match(lines[1], /[\u4e00-\u9fff]/);
+        assert.match(lines[1], /^Example:/, "example is immediately visible below the selected source");
+        assert.doesNotMatch(lines[1], /[\u4e00-\u9fff]/);
         assert.match(lines[1], /[A-Za-z]{3}/);
     }
 });
@@ -39,23 +41,25 @@ test("directional choices round-trip stable IDs and retain each model's format o
 test("author labels migrate legacy saved labels without changing IDs or workflow fields", async () => {
     for (const [filename, target] of [["minimax_h3_prompt_enhancer.js", "h3"], ["seedance20_prompt_enhancer.js", "seedance20"]]) {
         const harness = await enhancerHarness(filename, target);
-        for (const skill of DIRECTIONAL_SKILLS.filter((item) => item.legacyLabel)) {
-            assert.equal(directionalSkillId(skill.legacyLabel), skill.id);
-            assert.equal(directionalSkillLabel(skill.legacyLabel), skill.label);
-            const saved = sampleValues(harness.names);
-            saved[35] = skill.legacyLabel;
-            const node = harness.configure(saved);
-            const values = harness.values(node);
-            assert.equal(values.director_skill, skill.label);
-            assert.equal(values.seed, 42);
-            assert.equal(values.local_model, "test-model.gguf");
-            assert.equal(values.case_template, "saved case_template");
-            const serialized = {};
-            node.onSerialize(serialized);
-            assert.equal(serialized.widgets_values.length, 38);
-            assert.equal(serialized.widgets_values[35], skill.id);
-            const restored = harness.values(harness.configure(serialized.widgets_values));
-            assert.equal(restored.director_skill, skill.label);
+        for (const skill of DIRECTIONAL_SKILLS.filter((item) => item.legacyLabels?.length)) {
+            for (const legacyLabel of skill.legacyLabels) {
+                assert.equal(directionalSkillId(legacyLabel), skill.id);
+                assert.equal(directionalSkillLabel(legacyLabel, target === "h3"), target === "h3" ? skill.label : skill.legacyDisplayLabel);
+                const saved = sampleValues(harness.names);
+                saved[35] = legacyLabel;
+                const node = harness.configure(saved);
+                const values = harness.values(node);
+                assert.equal(values.director_skill, target === "h3" ? skill.label : skill.legacyDisplayLabel);
+                assert.equal(values.seed, 42);
+                assert.equal(values.local_model, "test-model.gguf");
+                assert.equal(values.case_template, "saved case_template");
+                const serialized = {};
+                node.onSerialize(serialized);
+                assert.equal(serialized.widgets_values.length, 38);
+                assert.equal(serialized.widgets_values[35], skill.id);
+                const restored = harness.values(harness.configure(serialized.widgets_values));
+                assert.equal(restored.director_skill, target === "h3" ? skill.label : skill.legacyDisplayLabel);
+            }
         }
     }
 });
@@ -68,7 +72,7 @@ test("both drama choices round-trip all 38 fields through the real enhancer hook
             saved[35] = id;
             const node = harness.configure(saved);
             const values = harness.values(node);
-            assert.equal(values.director_skill, directionalSkillLabel(id));
+            assert.equal(values.director_skill, directionalSkillLabel(id, target === "h3"));
             assert.equal(values.seed, 42);
             assert.equal(values.local_model, "test-model.gguf");
             assert.equal(values.case_template, "saved case_template");
@@ -78,7 +82,7 @@ test("both drama choices round-trip all 38 fields through the real enhancer hook
             assert.equal(serialized.widgets_values[35], id);
             assert.deepEqual(harness.values(harness.configure(serialized.widgets_values)), values);
             const help = directionalSkillDescription(id, target);
-            assert.match(help, /明确要求/);
+            assert.match(help, /Preserve supplied lines by default/);
             assert.match(help, /explicit/i);
             if (target === "seedance20") assert.doesNotMatch(help, /H3/);
         }
@@ -90,7 +94,7 @@ test("unknown IDs are preserved for validation without activating a skill or exp
         assert.equal(directionalSkillId(invalid), invalid);
         assert.equal(directionalSkillLabel(invalid), invalid);
         assert.equal(isDirectionalSkillEnabled(invalid), false);
-        assert.match(directionalSkillDescription(invalid), /^未知定向技能，请重新选择/);
+        assert.match(directionalSkillDescription(invalid), /^Unknown directing Skill/);
     }
     for (const unknown of ["future_skill", "  future_skill  ", "sk-test-private-value"]) {
         assert.equal(directionalSkillId(unknown), unknown);
@@ -98,9 +102,9 @@ test("unknown IDs are preserved for validation without activating a skill or exp
         assert.equal(isDirectionalSkillEnabled(unknown), false);
         for (const target of ["h3", "seedance20"]) {
             const help = directionalSkillDescription(unknown, target);
-            assert.match(help, /^未知定向技能，请重新选择/);
+            assert.match(help, /^Unknown directing Skill/);
             assert.ok(!help.includes(unknown.trim()));
-            assert.doesNotMatch(help, /定向创作：关闭|当前创作来源/);
+            assert.doesNotMatch(help, /Directional creation: Off|Active creation profile/);
         }
     }
 });
@@ -136,9 +140,9 @@ test("20 skill/off cycles retain saved templates and fixed geometry without extr
             for (const [name, value] of Object.entries(saved)) {
                 const widget = node.widgets.find((item) => item.name === name);
                 assert.equal(widget.value, value);
-                assert.match(widget.label, /当前暂停/);
+                assert.match(widget.label, /paused/);
             }
-            assert.match(detail.element.textContent, /关闭后恢复/);
+            assert.match(detail.element.textContent, /resume when this Skill is disabled/);
             skill.value = "none";
             skill.callback();
             assert.equal(detail.options.getMinHeight(), DIRECTIONAL_HELP_HEIGHT);
@@ -159,7 +163,7 @@ test("20 skill/off cycles retain saved templates and fixed geometry without extr
         skill.value = "sk-test-private-value";
         skill.callback();
         assert.equal(skill.value, "sk-test-private-value");
-        assert.match(detail.element.textContent, /^未知定向技能，请重新选择/);
+        assert.match(detail.element.textContent, /^Unknown directing Skill/);
         assert.doesNotMatch(detail.element.textContent, /sk-test-private-value/);
         assert.equal(node.widgets.find((item) => item.name === "case_template").label, "case_template");
         assert.equal(detail.serializeValue(), undefined);
@@ -256,9 +260,9 @@ test("H3 22/31/35/36 workflows preserve every field and fill only appended defau
         const before = [...saved];
         const node = harness.configure(saved);
         const restored = harness.values(node);
-        harness.names.slice(0, length).forEach((name, index) => assert.equal(restored[name], name === "director_skill" ? directionalSkillLabel(saved[index]) : saved[index], name));
+        harness.names.slice(0, length).forEach((name, index) => assert.equal(restored[name], name === "director_skill" ? directionalSkillLabel(saved[index], true) : saved[index], name));
         harness.names.slice(length).forEach((name) => assert.equal(restored[name], harness.defaults[name], name));
-        assert.equal(restored.director_skill, length === 36 ? directionalSkillLabel("cinematic_gunfight") : "关闭 / Off");
+        assert.equal(restored.director_skill, length === 36 ? directionalSkillLabel("cinematic_gunfight", true) : "Off");
         assert.deepEqual(saved, before, "migration must not mutate source workflow");
     }
 });
@@ -275,7 +279,7 @@ test("H3 older 16/17/19/21 layouts still migrate before the appended skill", asy
         const saved = sampleValues(names);
         const restored = harness.values(harness.configure(saved));
         names.forEach((name, index) => assert.equal(restored[name], saved[index], name));
-        assert.equal(restored.director_skill, "关闭 / Off");
+        assert.equal(restored.director_skill, "Off");
         assert.equal(restored.local_model, harness.defaults.local_model);
     }
 });

@@ -27,35 +27,81 @@ const NODE_ID = "MiniMaxH3PromptEnhancerT8";
 const SIGN_UP_URL = "https://api.seedance.nz/sign-up?aff=5f4w";
 const AI_WORKSHOP_SIGN_UP_URL = "https://ai.t8star.org/register?aff=dP7j";
 const LOCAL_SKILL_BUNDLE_URL = "https://github.com/T8mars/minimax-h3-prompt-skill-T8";
-const SEEDANCE_API_MODE = "贞贞平价小屋（推荐）";
-const AI_WORKSHOP_API_MODE = "贞贞的AI工坊（图片/视频）";
-const OPENAI_API_MODE = "OpenAI兼容接口（备用）";
-const LOCAL_QWEN_API_MODE = "本地 GGUF（llama.cpp / Qwen，离线）";
+const SEEDANCE_API_MODE = "Seedance (Recommended)";
+const AI_WORKSHOP_API_MODE = "T8 AI Workshop (Images / Video)";
+const OPENAI_API_MODE = "OpenAI-Compatible API (Backup)";
+const LOCAL_QWEN_API_MODE = "Local GGUF (llama.cpp / Qwen, Offline)";
 const LEGACY_LOCAL_QWEN_API_MODE = "本地 Qwen3.8-27B（GGUF，离线）";
-const isLocalApiMode = (value) => [LOCAL_QWEN_API_MODE, LEGACY_LOCAL_QWEN_API_MODE].includes(value);
+const LEGACY_API_MODE_LABELS = {
+    "贞贞平价小屋（推荐）": SEEDANCE_API_MODE,
+    "贞贞的AI工坊（图片/视频）": AI_WORKSHOP_API_MODE,
+    "OpenAI兼容接口（备用）": OPENAI_API_MODE,
+    "本地 GGUF（llama.cpp / Qwen，离线）": LOCAL_QWEN_API_MODE,
+};
+const isLocalApiMode = (value) => [LOCAL_QWEN_API_MODE, LEGACY_LOCAL_QWEN_API_MODE, "本地 GGUF（llama.cpp / Qwen，离线）"].includes(value);
 const AI_WORKSHOP_DEFAULT_MODEL = "gemini-3.5-flash";
-const CUSTOM_MODEL_OPTION = "Custom（自定义）";
-const AUTO_SHOT_COUNT = "AUTO（系统自动判断）";
+const CUSTOM_MODEL_OPTION = "Custom";
+const AUTO_SHOT_COUNT = "AUTO (System Decides)";
 const SHOT_COUNT_OPTIONS = [AUTO_SHOT_COUNT, ...Array.from({ length: 20 }, (_, index) => String(index + 1))];
-const COMPAT_SKILL_PROFILE = "现有兼容（保留中英文）";
-const STRICT_SKILL_PROFILE = "官方 Skill 严格（全英文协议）";
+const COMPAT_SKILL_PROFILE = "Compatibility (Preserve Chinese/English)";
+const STRICT_SKILL_PROFILE = "Strict Official Skill (English-Only Protocol)";
 const OFFICIAL_SKILL_PROFILES = [COMPAT_SKILL_PROFILE, STRICT_SKILL_PROFILE];
-const NO_CREATIVE_PRESET = "无（仅核心规则）";
-const NO_CASE_TEMPLATE = "无（不使用 T8 案例）";
-const MV_CREATIVE_PRESET = "音乐 MV 动态字幕（官方）";
+const NO_CREATIVE_PRESET = "No Preset (Core Rules Only)";
+const NO_CASE_TEMPLATE = "None (not using T8 case)";
+const MV_CREATIVE_PRESET = "Official Music Video Kinetic Typography";
 const LEGACY_MV_CREATIVE_PRESET = "MV / 歌词贴字";
 const CREATIVE_PRESET_OPTIONS = [
     NO_CREATIVE_PRESET,
-    "AUTO（根据意图判断）",
-    "极简产品广告",
-    "3D 动画短片",
-    "品牌宣传短片",
+    "AUTO (Infer from User Intent)",
+    "Minimalist Product Advertisement",
+    "3D Animation Short",
+    "Brand Promotional Video",
     MV_CREATIVE_PRESET,
-    "双人合作游戏开场",
-    "纸拼贴讲解",
-    "立体纸艺停格讲解",
-    "手绘实拍融合",
+    "Two-Player Co-op Game Intro",
+    "Paper-Collage Explainer",
+    "Papercraft Stop-Motion Explainer",
+    "Hand-Drawn and Live-Action Fusion",
 ];
+const LEGACY_CREATIVE_PRESET_LABELS = {
+    "无（仅核心规则）": NO_CREATIVE_PRESET,
+    "AUTO（根据意图判断）": "AUTO (Infer from User Intent)",
+    "极简产品广告": "Minimalist Product Advertisement",
+    "3D 动画短片": "3D Animation Short",
+    "品牌宣传短片": "Brand Promotional Video",
+    "音乐 MV 动态字幕（官方）": MV_CREATIVE_PRESET,
+    "MV / 歌词贴字": MV_CREATIVE_PRESET,
+    "双人合作游戏开场": "Two-Player Co-op Game Intro",
+    "纸拼贴讲解": "Paper-Collage Explainer",
+    "立体纸艺停格讲解": "Papercraft Stop-Motion Explainer",
+    "手绘实拍融合": "Hand-Drawn and Live-Action Fusion",
+};
+const OFFICIAL_ENHANCEMENT = "Official Enhancement";
+const REFERENCE_TEMPLATE_FUSION = "Reference Template Fusion";
+const LEGACY_PROMPT_MODE_LABELS = {
+    "官方增强": OFFICIAL_ENHANCEMENT,
+    "参考模板融合": REFERENCE_TEMPLATE_FUSION,
+};
+const LEGACY_SKILL_PROFILE_LABELS = {
+    "现有兼容（保留中英文）": COMPAT_SKILL_PROFILE,
+    "官方 Skill 严格（全英文协议）": STRICT_SKILL_PROFILE,
+};
+const LEGACY_SHOT_COUNT_LABELS = { "AUTO（系统自动判断）": AUTO_SHOT_COUNT };
+const LOCAL_THINK_OPTIONS = ["Off (Recommended, Faster)", "On (Higher Quality)"];
+const LEGACY_LOCAL_THINK_LABELS = {
+    "关闭（推荐，速度优先）": LOCAL_THINK_OPTIONS[0],
+    "开启（质量优先）": LOCAL_THINK_OPTIONS[1],
+};
+const LOCAL_UNLOAD_OPTIONS = ["Unload After Run (Recommended)", "Keep Loaded", "Unload After 10 Minutes Idle"];
+const LEGACY_LOCAL_UNLOAD_LABELS = {
+    "执行后卸载（推荐）": LOCAL_UNLOAD_OPTIONS[0],
+    "保持驻留": LOCAL_UNLOAD_OPTIONS[1],
+    "空闲10分钟后卸载": LOCAL_UNLOAD_OPTIONS[2],
+};
+const LOCAL_COMFY_MEMORY_OPTIONS = ["AUTO (Release ComfyUI Models if VRAM Is Low)", "Keep ComfyUI Models Loaded"];
+const LEGACY_LOCAL_COMFY_MEMORY_LABELS = {
+    "AUTO（显存不足时释放）": LOCAL_COMFY_MEMORY_OPTIONS[0],
+    "不主动释放 ComfyUI 模型": LOCAL_COMFY_MEMORY_OPTIONS[1],
+};
 const MV_PROMPT_PLACEHOLDER = [
     "MV类型/音乐类型/视觉风格：",
     "歌词原文（逐字锁定，可空）：",
@@ -71,11 +117,18 @@ const MV_CONSTRAINTS_TOOLTIP = "MV 硬性要求示例：不增加歌词；不遮
 const MV_TEMPLATE_TOOLTIP = "仅迁移模板的镜头组织、节奏、运镜、转场和视觉语法；模板人物、歌词、BPM、标题、剧情和镜头数不会覆盖用户内容。";
 
 const TASK_TYPE_LABELS = {
-    T2VA: "T2VA（文生音视频）",
-    I2VA: "I2VA（首帧图生音视频）",
-    FL2VA: "FL2VA（首尾帧生音视频）",
-    L2VA: "L2VA（尾帧图生音视频）",
-    Ref2VA: "Ref2VA（参考图/视频生音视频）",
+    T2VA: "T2VA (Text-to-Video and Audio)",
+    I2VA: "I2VA (First-Frame Image-to-Video and Audio)",
+    FL2VA: "FL2VA (First/Last-Frame Image-to-Video and Audio)",
+    L2VA: "L2VA (Last-Frame Image-to-Video and Audio)",
+    Ref2VA: "Ref2VA (Reference Image/Video-to-Video and Audio)",
+};
+const LEGACY_TASK_TYPE_LABELS = {
+    "T2VA（文生音视频）": TASK_TYPE_LABELS.T2VA,
+    "I2VA（首帧图生音视频）": TASK_TYPE_LABELS.I2VA,
+    "FL2VA（首尾帧生音视频）": TASK_TYPE_LABELS.FL2VA,
+    "L2VA（尾帧图生音视频）": TASK_TYPE_LABELS.L2VA,
+    "Ref2VA（参考图/视频生音视频）": TASK_TYPE_LABELS.Ref2VA,
 };
 const LEGACY_UI_VALUES = new Set(["展开", "收起", "提交当前工作流", "打开 Seedance 注册页面"]);
 const API_KEY_PATTERN = /^sk-[A-Za-z0-9_-]{16,}$/;
@@ -180,8 +233,10 @@ function isApiKeyLinked(node) {
 }
 
 
-function normalizeChoice(widget, options, fallback) {
-    if (widget && !options.includes(widget.value)) widget.value = fallback;
+function normalizeChoice(widget, options, fallback, aliases = {}) {
+    if (!widget) return;
+    if (Object.prototype.hasOwnProperty.call(aliases, widget.value)) widget.value = aliases[widget.value];
+    if (!options.includes(widget.value)) widget.value = fallback;
 }
 
 
@@ -247,12 +302,12 @@ function addAdvancedToggle(node, widgets) {
 
     const toggle = node.addWidget(
         "button",
-        "⚙️ 高级选项（可选）",
-        "展开",
+        "⚙️ Advanced Options (Optional)",
+        "Expand",
         () => {
             expanded = !expanded;
             for (const widget of widgets) setWidgetVisible(widget, expanded);
-            toggle.value = expanded ? "收起" : "展开";
+            toggle.value = expanded ? "Collapse" : "Expand";
             resizeNode(node);
         },
         { serialize: false },
@@ -266,7 +321,7 @@ function addReferenceTemplateBehavior(node, modeWidget, templateWidget) {
         if (LEGACY_UI_VALUES.has(String(templateWidget.value || "").trim())) {
             setTextWidgetValue(templateWidget, "");
         }
-        setWidgetVisible(templateWidget, mode === "参考模板融合" && !isDirectionalSkillEnabled(node.widgets?.find((widget) => widget.name === "director_skill")?.value));
+        setWidgetVisible(templateWidget, mode === REFERENCE_TEMPLATE_FUSION && !isDirectionalSkillEnabled(node.widgets?.find((widget) => widget.name === "director_skill")?.value));
         resizeNode(node);
     };
     const originalCallback = modeWidget.callback;
@@ -285,7 +340,7 @@ function addApiModeBehavior(node, modeWidget, baseUrlWidget, videoUrlsWidget, mo
         const compatible = modeWidget.value === OPENAI_API_MODE;
         setWidgetVisible(modelWidget, workshop);
         setWidgetVisible(customModelWidget, compatible || (workshop && modelWidget.value === CUSTOM_MODEL_OPTION));
-        customModelWidget.label = compatible ? "OpenAI 模型 ID（必填）" : "AI工坊自定义模型 ID";
+        customModelWidget.label = compatible ? "OpenAI Model ID (Required)" : "AI Workshop Custom Model ID";
     };
     const originalModelCallback = modelWidget.callback;
     modelWidget.callback = function (value) {
@@ -300,7 +355,7 @@ function addApiModeBehavior(node, modeWidget, baseUrlWidget, videoUrlsWidget, mo
         const compatible = mode === OPENAI_API_MODE;
         const local = isLocalApiMode(mode);
         baseUrlWidget.label = "OpenAI Base URL";
-        videoUrlsWidget.label = "视频素材 URL（可选，每行一个）";
+        videoUrlsWidget.label = "Video URLs (Optional, One Per Line)";
         setWidgetVisible(baseUrlWidget, compatible);
         setWidgetVisible(videoUrlsWidget, compatible);
         for (const widget of localWidgets || []) setWidgetVisible(widget, local);
@@ -308,8 +363,8 @@ function addApiModeBehavior(node, modeWidget, baseUrlWidget, videoUrlsWidget, mo
         if (node.t8SignUpWidget) {
             setWidgetVisible(node.t8SignUpWidget, !compatible && !local);
             const signupLabel = mode === AI_WORKSHOP_API_MODE
-                ? "🔑 获取 AI 工坊 API Key"
-                : "🔑 获取贞贞 API Key";
+                ? "🔑 Get AI Workshop API Key"
+                : "🔑 Get Seedance API Key";
             node.t8SignUpWidget.label = signupLabel;
             node.t8SignUpWidget.name = signupLabel;
         }
@@ -350,15 +405,15 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
     input.type = "password";
     const updatePlaceholder = () => {
         if (isApiKeyLinked(node)) {
-            input.placeholder = "已连接外部 API Key STRING（连接值优先生效）";
+            input.placeholder = "External API Key STRING connected (connected value takes priority)";
         } else if (apiModeWidget?.value === OPENAI_API_MODE) {
-            input.placeholder = "OpenAI兼容 API Key（输入后保存到工作流）";
+            input.placeholder = "OpenAI-compatible API Key (saved to workflow when entered)";
         } else if (apiModeWidget?.value === AI_WORKSHOP_API_MODE) {
-            input.placeholder = "AI 工坊 API Key（输入后保存到工作流）";
+            input.placeholder = "AI Workshop API Key (saved to workflow when entered)";
         } else if (isLocalApiMode(apiModeWidget?.value)) {
-            input.placeholder = "本地模式不需要 API Key";
+            input.placeholder = "API Key is not required in local mode";
         } else {
-            input.placeholder = "贞贞 API Key（输入后保存到工作流）";
+            input.placeholder = "Seedance API Key (saved to workflow when entered)";
         }
     };
     node.t8UpdateApiKeyPlaceholder = updatePlaceholder;
@@ -379,8 +434,8 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
 
     const reveal = document.createElement("button");
     reveal.type = "button";
-    reveal.textContent = "显示";
-    reveal.title = "显示或隐藏 API Key";
+    reveal.textContent = "Show";
+    reveal.title = "Show or hide the API Key";
     reveal.style.cssText = [
         "height:28px",
         "padding:0 9px",
@@ -393,7 +448,7 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
     reveal.onclick = () => {
         const show = input.type === "password";
         input.type = show ? "text" : "password";
-        reveal.textContent = show ? "隐藏" : "显示";
+        reveal.textContent = show ? "Hide" : "Show";
     };
 
     inputRow.append(input, reveal);
@@ -408,13 +463,13 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
 
     const save = document.createElement("button");
     save.type = "button";
-    save.textContent = "💾 保存到工作流";
-    save.title = "API Key 将写入工作流 JSON，分享前请清空";
+    save.textContent = "💾 Save to Workflow";
+    save.title = "The API Key will be written to the workflow JSON. Clear it before sharing.";
 
     const clear = document.createElement("button");
     clear.type = "button";
-    clear.textContent = "清空";
-    clear.title = "从输入框和工作流中删除 API Key";
+    clear.textContent = "Clear";
+    clear.title = "Remove the API Key from the input and workflow";
 
     for (const button of [save, clear]) {
         button.style.cssText = [
@@ -445,7 +500,7 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
     });
     input.value = value;
     input.addEventListener("input", () => {
-        save.textContent = "💾 保存到工作流";
+        save.textContent = "💾 Save to Workflow";
         node.setDirtyCanvas(true, true);
     });
 
@@ -458,7 +513,7 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
         sourceWidget.callback?.(sourceWidget.value);
         node.graph?.change?.();
         node.setDirtyCanvas(true, true);
-        save.textContent = "✓ 已保存到工作流";
+        save.textContent = "✓ Saved to Workflow";
     };
     save.onclick = commit;
     clear.onclick = () => {
@@ -467,7 +522,7 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
         sourceWidget.callback?.(sourceWidget.value);
         node.graph?.change?.();
         node.setDirtyCanvas(true, true);
-        save.textContent = "💾 保存到工作流";
+        save.textContent = "💾 Save to Workflow";
     };
     node.t8CommitApiKey = commit;
 
@@ -477,9 +532,9 @@ function addApiKeyWidget(node, sourceWidget, apiModeWidget) {
         reveal.disabled = linked;
         save.disabled = linked;
         input.title = linked
-            ? "当前使用 api_key 插口连接的外部 STRING；下方工作流密钥不会覆盖连接值。"
-            : "可在此输入 API Key，并选择是否保存到工作流。";
-        save.textContent = linked ? "✓ 外部 STRING 已连接" : "💾 保存到工作流";
+            ? "Using the external STRING connected to the api_key input. The workflow key below will not override it."
+            : "Enter an API Key here and choose whether to save it to the workflow.";
+        save.textContent = linked ? "✓ External STRING Connected" : "💾 Save to Workflow";
         updatePlaceholder();
     };
     node.t8UpdateApiKeyConnection = updateConnectionState;
@@ -516,11 +571,13 @@ export function configureRelayWidgets(node) {
     const controls = ["relay_event_count", "relay_duration_seconds", "relay_time_ranges"]
         .map((name) => node.widgets?.find((widget) => widget.name === name)).filter(Boolean);
     node.t8UpdateRelayMode = () => {
-        const enabled = mode?.value === "Prompt Relay 编排";
+        if (mode?.value === "普通增强 / Normal") mode.value = "Standard Enhancement";
+        if (mode?.value === "Prompt Relay 编排") mode.value = "Prompt Relay Orchestration";
+        const enabled = mode?.value === "Prompt Relay Orchestration";
         for (const widget of controls) setWidgetVisible(widget, enabled);
     };
     if (mode) {
-        mode.tooltip = "普通增强保持原功能。Relay 输出接 Plan 的 global/local/time + length，timing_mode=seconds；不要同时连接 typed events。通常一次创作；语言和格式纠正各可能额外一次。";
+        mode.tooltip = "Standard enhancement preserves existing behavior. Connect Relay outputs to Plan's global/local/time + length with timing_mode=seconds; do not also connect typed events. Usually one generation is needed; language or format correction may each require one additional request.";
         const callback = mode.callback;
         mode.callback = (...args) => {
             callback?.apply(mode, args);
@@ -565,7 +622,7 @@ app.registerExtension({
             const openaiVideoUrlsWidget = this.widgets?.find((widget) => widget.name === "openai_video_urls");
             const seedWidget = this.widgets?.find((widget) => widget.name === "seed");
             configureRelayWidgets(this);
-            addQualityUI(this);
+            addQualityUI(this, { english: true });
             const localWidgets = [
                 "local_model", "local_mmproj", "local_context_size", "local_max_tokens",
                 "local_think_mode", "local_reasoning_effort", "local_video_sample_fps",
@@ -575,19 +632,19 @@ app.registerExtension({
             const seedControlWidget = seedWidget?.linkedWidgets?.[0]
                 || this.widgets?.find((widget) => widget.name === "control_after_generate");
             if (seedControlWidget) {
-                seedControlWidget.label = "种子状态（运行后）";
-                seedControlWidget.tooltip = "fixed 固定；randomize 随机；increment 递增；decrement 递减。";
+                seedControlWidget.label = "Seed Behavior (After Run)";
+                seedControlWidget.tooltip = "fixed: keep; randomize: choose randomly; increment: add one; decrement: subtract one.";
             }
             if (rewriteModeWidget) {
-                rewriteModeWidget.tooltip = "改写模式只控制扩写幅度：strict 最保守，balanced 平衡补全，creative 更具创造性；它不控制官方协议语言。";
+                rewriteModeWidget.tooltip = "Rewrite mode controls only the degree of enrichment: strict is conservative, balanced adds detail, and creative allows more stylistic expansion. It does not control the Official Skill language profile.";
             }
             if (officialSkillProfileWidget) {
-                officialSkillProfileWidget.label = "H3 核心写作 Skill（始终启用）";
-                officialSkillProfileWidget.tooltip = "官方 9 个 Skill = 1 个始终启用的 H3 核心写作 Skill + 8 个可选场景 Skill。这里控制核心规范的输出协议：兼容模式服从中文/English，严格模式强制英文说明；它不等同于改写模式 strict。";
+                officialSkillProfileWidget.label = "H3 Core Writing Skill (Always Active)";
+                officialSkillProfileWidget.tooltip = "The nine Official Skills comprise one always-active H3 core writing Skill and eight optional scene Skills. This setting controls the core output language protocol: compatibility mode follows Chinese/English selection, while strict mode requires English descriptions. This is separate from strict rewrite mode.";
             }
             if (creativePresetWidget) {
-                creativePresetWidget.label = "MiniMax 官方场景 Skill（8 个可选）";
-                creativePresetWidget.tooltip = "选择一个官方场景 Skill 后，节点下方会显示用途、推荐输入、结构锚点、官方 GIF 与来源；GIF 不会发送给 LLM。选择 T8 非官方模板时，T8 模板优先，本项暂不生效。";
+                creativePresetWidget.label = "MiniMax Official Scene Skill (8 Available)";
+                creativePresetWidget.tooltip = "Selecting an Official Scene Skill displays its purpose, recommended input, structural anchors, official GIF, and source below. The GIF is not sent to the LLM. A selected T8 unofficial template takes priority and temporarily disables this setting.";
             }
 
             this.t8IsT8CaseTemplateActive = () => {
@@ -599,15 +656,15 @@ app.registerExtension({
                 const directionalActive = isDirectionalSkillEnabled(directorSkillWidget?.value);
                 const t8Active = this.t8IsT8CaseTemplateActive();
                 creativePresetWidget.label = directionalActive
-                    ? "MiniMax 官方场景 Skill（定向技能优先，当前停用）"
+                    ? "MiniMax Official Scene Skill (Directional Skill Takes Priority; Inactive)"
                     : t8Active
-                    ? "MiniMax 官方场景 Skill（T8 优先，当前停用）"
-                    : "MiniMax 官方场景 Skill（8 个可选）";
+                    ? "MiniMax Official Scene Skill (T8 Takes Priority; Inactive)"
+                    : "MiniMax Official Scene Skill (8 Available)";
                 creativePresetWidget.tooltip = directionalActive
-                    ? "当前使用独立定向创作 Skill；官方场景选择已保留，关闭定向技能后恢复。H3 核心格式仍生效。"
+                    ? "A separate directional creation Skill is active. The Official Scene Skill selection is preserved and will resume when the directional Skill is disabled. H3 core formatting remains active."
                     : t8Active
-                    ? "已选择 T8 非官方模板：本次只应用 T8 模板，8 个可选官方场景 Skill（包括 AUTO）暂不生效；H3 核心写作 Skill 仍始终启用。取消 T8 模板后，本项自动恢复。"
-                    : "选择一个官方场景 Skill 后，节点下方会显示用途、推荐输入、结构锚点、官方 GIF 与来源；GIF 不会发送给 LLM。选择 T8 非官方模板时，T8 模板优先，本项暂不生效。";
+                    ? "A T8 unofficial template is selected. Only the T8 template applies for this run; the eight optional Official Scene Skills, including AUTO, are inactive. The H3 core writing Skill remains active. This setting resumes when the T8 template is cleared."
+                    : "Selecting an Official Scene Skill displays its purpose, recommended input, structural anchors, official GIF, and source below. The GIF is not sent to the LLM. A selected T8 unofficial template takes priority and temporarily disables this setting.";
                 this.t8UpdateOfficialPreset?.();
                 if (directionalActive) this.t8UpdateCaseTemplate?.(NO_CASE_TEMPLATE);
                 this.t8UpdateDirectionalSkill?.();
@@ -627,27 +684,33 @@ app.registerExtension({
                 addMvPresetBehavior(this, creativePresetWidget, promptWidget, referenceContextWidget, constraintsWidget, referenceTemplateWidget);
             }
             this.t8NormalizePromptOptions = () => {
-                if (TASK_TYPE_LABELS[taskTypeWidget?.value]) taskTypeWidget.value = TASK_TYPE_LABELS[taskTypeWidget.value];
-                normalizeChoice(taskTypeWidget, Object.values(TASK_TYPE_LABELS), TASK_TYPE_LABELS.T2VA);
-                normalizeChoice(shotCountWidget, SHOT_COUNT_OPTIONS, AUTO_SHOT_COUNT);
-                normalizeChoice(outputLanguageWidget, ["中文", "English"], "中文");
-                normalizeChoice(promptModeWidget, ["官方增强", "参考模板融合"], "官方增强");
-                normalizeChoice(officialSkillProfileWidget, OFFICIAL_SKILL_PROFILES, COMPAT_SKILL_PROFILE);
+                    if (TASK_TYPE_LABELS[taskTypeWidget?.value]) taskTypeWidget.value = TASK_TYPE_LABELS[taskTypeWidget.value];
+                    normalizeChoice(taskTypeWidget, Object.values(TASK_TYPE_LABELS), TASK_TYPE_LABELS.T2VA, LEGACY_TASK_TYPE_LABELS);
+                if (caseTemplateWidget?.value === "无（不使用 T8 案例）") caseTemplateWidget.value = NO_CASE_TEMPLATE;
+                    normalizeChoice(shotCountWidget, SHOT_COUNT_OPTIONS, AUTO_SHOT_COUNT, LEGACY_SHOT_COUNT_LABELS);
+                    normalizeChoice(outputLanguageWidget, ["Chinese", "English"], "Chinese", { "中文": "Chinese" });
+                    normalizeChoice(promptModeWidget, [OFFICIAL_ENHANCEMENT, REFERENCE_TEMPLATE_FUSION], OFFICIAL_ENHANCEMENT, LEGACY_PROMPT_MODE_LABELS);
+                    normalizeChoice(officialSkillProfileWidget, OFFICIAL_SKILL_PROFILES, COMPAT_SKILL_PROFILE, LEGACY_SKILL_PROFILE_LABELS);
                 if (creativePresetWidget?.value === LEGACY_MV_CREATIVE_PRESET) {
                     creativePresetWidget.value = MV_CREATIVE_PRESET;
                 }
-                normalizeChoice(creativePresetWidget, CREATIVE_PRESET_OPTIONS, NO_CREATIVE_PRESET);
-                if (directorSkillWidget) directorSkillWidget.value = directionalSkillLabel(directorSkillWidget.value);
+                normalizeChoice(creativePresetWidget, CREATIVE_PRESET_OPTIONS, NO_CREATIVE_PRESET, LEGACY_CREATIVE_PRESET_LABELS);
+                if (directorSkillWidget) directorSkillWidget.value = directionalSkillLabel(directorSkillWidget.value, true);
                 normalizeChoice(
                     apiModeWidget,
-                    [SEEDANCE_API_MODE, AI_WORKSHOP_API_MODE, OPENAI_API_MODE, LOCAL_QWEN_API_MODE, LEGACY_LOCAL_QWEN_API_MODE],
+                    [SEEDANCE_API_MODE, AI_WORKSHOP_API_MODE, OPENAI_API_MODE, LOCAL_QWEN_API_MODE],
                     SEEDANCE_API_MODE,
+                    { ...LEGACY_API_MODE_LABELS, [LEGACY_LOCAL_QWEN_API_MODE]: LOCAL_QWEN_API_MODE },
                 );
                 normalizeChoice(
                     aiWorkshopModelWidget,
                     [AI_WORKSHOP_DEFAULT_MODEL, CUSTOM_MODEL_OPTION],
                     AI_WORKSHOP_DEFAULT_MODEL,
+                    { "Custom（自定义）": CUSTOM_MODEL_OPTION },
                 );
+                normalizeChoice(this.widgets?.find((widget) => widget.name === "local_think_mode"), LOCAL_THINK_OPTIONS, LOCAL_THINK_OPTIONS[0], LEGACY_LOCAL_THINK_LABELS);
+                normalizeChoice(this.widgets?.find((widget) => widget.name === "local_unload_policy"), LOCAL_UNLOAD_OPTIONS, LOCAL_UNLOAD_OPTIONS[0], LEGACY_LOCAL_UNLOAD_LABELS);
+                normalizeChoice(this.widgets?.find((widget) => widget.name === "local_comfy_memory_policy"), LOCAL_COMFY_MEMORY_OPTIONS, LOCAL_COMFY_MEMORY_OPTIONS[0], LEGACY_LOCAL_COMFY_MEMORY_LABELS);
                 if (LEGACY_UI_VALUES.has(String(apiKeyWidget?.value || "").trim())) apiKeyWidget.value = "";
                 for (const widget of [referenceContextWidget, constraintsWidget, referenceTemplateWidget, customModelWidget, openaiBaseUrlWidget, openaiVideoUrlsWidget]) {
                     const value = String(widget?.value || "").trim();
@@ -668,6 +731,7 @@ app.registerExtension({
 
             addDirectionalSkillUI(this, directorSkillWidget, {
                 target: "h3",
+                english: true,
                 onChange: (active) => {
                     this.t8UpdateReferenceTemplate?.();
                     this.t8UpdateMvPreset?.();
@@ -678,7 +742,10 @@ app.registerExtension({
             });
 
             addOfficialPresetUI(this, creativePresetWidget, promptWidget, () => resizeNode(this));
-            addCaseTemplateUI(this, caseTemplateWidget, promptWidget, () => resizeNode(this));
+            addCaseTemplateUI(this, caseTemplateWidget, promptWidget, () => resizeNode(this), {
+                useIds: true,
+                noneValue: NO_CASE_TEMPLATE,
+            });
 
             const advancedWidgets = [referenceContextWidget, constraintsWidget].filter(Boolean);
             if (advancedWidgets.length) addAdvancedToggle(this, advancedWidgets);
@@ -687,8 +754,8 @@ app.registerExtension({
 
             const capabilityWidget = this.addWidget(
                 "button",
-                "🧭 渠道能力预检",
-                "查看图片、视频、URL 与可选参数的已知/未知支持边界",
+                "🧭 Check Provider Capabilities",
+                "View known and unknown support for images, videos, URLs, and optional parameters",
                 () => showProviderCapability(apiModeWidget?.value, openaiBaseUrlWidget?.value),
                 { serialize: false },
             );
@@ -696,8 +763,8 @@ app.registerExtension({
 
             const diagnosticsWidget = this.addWidget(
                 "button",
-                "🩺 查看/复制脱敏诊断",
-                "只显示安全字段，不包含 Key、提示词、模板、素材或响应正文",
+                "🩺 View/Copy Redacted Diagnostics",
+                "Shows only safe fields; excludes keys, prompts, templates, media, and response text",
                 () => showRedactedDiagnostics(NODE_ID),
                 { serialize: false },
             );
@@ -713,8 +780,8 @@ app.registerExtension({
             let queuing = false;
             const runWidget = this.addWidget(
                 "button",
-                "▶ 运行提示词优化",
-                "提交当前工作流",
+                "▶ Run Prompt Enhancement",
+                "Queue the current workflow",
                 async () => {
                     if (queuing) return;
                     queuing = true;
@@ -732,8 +799,8 @@ app.registerExtension({
 
             const signUpWidget = this.addWidget(
                 "button",
-                "🔑 获取贞贞 API Key",
-                "打开当前渠道注册页面",
+                "🔑 Get Seedance API Key",
+                "Open the registration page for the selected provider",
                 () => window.open(
                     apiModeWidget?.value === AI_WORKSHOP_API_MODE ? AI_WORKSHOP_SIGN_UP_URL : SIGN_UP_URL,
                     "_blank",
@@ -746,8 +813,8 @@ app.registerExtension({
 
             const localStatusWidget = this.addWidget(
                 "button",
-                "🧩 检查本地 Qwen 安装 / 扫描 GGUF",
-                "重新扫描 models/LLM，刷新模型列表并检查 llama.cpp 运行时",
+                "🧩 Check Local Qwen Setup / Scan GGUF",
+                "Rescan models/LLM, refresh the model list, and check the llama.cpp runtime",
                 () => showLocalQwenStatus(this),
                 { serialize: false },
             );
@@ -756,8 +823,8 @@ app.registerExtension({
 
             const localWheelWidget = this.addWidget(
                 "button",
-                "🛞 获取 llama-cpp-python 预编译 Wheel",
-                "打开 JamePeng Releases；请选择匹配 ComfyUI Python、系统与 CUDA 的 Wheel",
+                "🛞 Get a Prebuilt llama-cpp-python Wheel",
+                "Open JamePeng Releases and select a Wheel matching ComfyUI Python, your OS, and CUDA",
                 openLlamaCppPythonWheels,
                 { serialize: false },
             );
@@ -765,8 +832,8 @@ app.registerExtension({
 
             const localPathWidget = this.addWidget(
                 "button",
-                "📁 模型路径：ComfyUI/models/LLM（点击复制）",
-                "主模型与 mmproj 可放在 LLM 的任意子目录",
+                "📁 Model Path: ComfyUI/models/LLM (Click to Copy)",
+                "The main model and mmproj can be placed in any LLM subdirectory",
                 copyLocalModelDirectory,
                 { serialize: false },
             );
@@ -774,13 +841,13 @@ app.registerExtension({
 
             const localSkillBundleWidget = this.addWidget(
                 "button",
-                "MiniMax & Seedance本地Skill和整合包",
-                "在新标签页打开本地 Skill 与整合包",
+                "MiniMax & Seedance Local Skills and Bundle",
+                "Open the local Skills and bundle in a new tab",
                 () => window.open(LOCAL_SKILL_BUNDLE_URL, "_blank", "noopener,noreferrer"),
                 { serialize: false },
             );
             localSkillBundleWidget.serializeValue = () => undefined;
-            const relayHelp = this.addWidget("button", "📖 Prompt Relay 使用说明 / Wiring guide", "global / local / time + length",
+            const relayHelp = this.addWidget("button", "📖 Prompt Relay Wiring Guide", "global / local / time + length",
                 () => window.open(new URL("./docs/h3_prompt_relay.md", import.meta.url).href, "_blank", "noopener,noreferrer"), { serialize: false });
             relayHelp.serializeValue = () => undefined;
             this.t8UpdateApiMode?.();
@@ -822,9 +889,9 @@ app.registerExtension({
                         [22, 31, 35, 36, SERIALIZED_WIDGET_NAMES.length],
                     ),
                 };
-                args[0].widgets_values[35] = directionalSkillLabel(args[0].widgets_values[35]);
-                args[0].widgets_values[36] = qualityLabel(args[0].widgets_values[36]);
-                args[0].widgets_values[37] = creationLabel(args[0].widgets_values[37]);
+                args[0].widgets_values[35] = directionalSkillLabel(args[0].widgets_values[35], true);
+                args[0].widgets_values[36] = qualityLabel(args[0].widgets_values[36], true);
+                args[0].widgets_values[37] = creationLabel(args[0].widgets_values[37], true);
                 // Restore appended defaults by name as well: the optional
                 // director control is displayed beside templates, not at the end.
                 restoredValues = namedWidgetValueMap(SERIALIZED_WIDGET_NAMES, args[0].widgets_values);

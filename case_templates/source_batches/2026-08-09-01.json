@@ -6,7 +6,7 @@
     {
       "case_id": "x-abulu8-2085626141759709286-browser-2085626141759709286-video-1",
       "template_id": "t8c001-product-proof-state-machine",
-      "label": "产品广告｜功能证据递进",
+      "label": "Product Advertising｜Functional Evidence Progression",
       "summary": "先给结果，再用多个可见证据逐层证明产品功能，最后收束到行动。",
       "case_sha256": "23cb4f6b85a2d7ed5d9e216ad1b279ae3673720e5e11b6023617abb62d22f724",
       "creative_dna_sha256": "1bfea667f950ad423b368cbdfe1fe8ff2431882be49b257cd99da7f3aeff3cf8",

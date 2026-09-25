@@ -14,11 +14,13 @@ from urllib.parse import urlsplit, urlunsplit
 import numpy as np
 import requests
 try:
-    from .h3_quality import (QUALITY_OFF, QUALITY_OPTIONS, CREATION_OFF, CREATION_OPTIONS,
+    from .h3_quality import (QUALITY_OFF, QUALITY_CHECK, QUALITY_REPAIR, QUALITY_OPTIONS,
+                             CREATION_OFF, CREATION_CAUSAL, CREATION_OPTIONS,
                              normalize_quality, normalize_creation, creation_instruction)
     from .quality_pipeline import h3_quality_result, retained_draft_provider
 except ImportError:
-    from h3_quality import (QUALITY_OFF, QUALITY_OPTIONS, CREATION_OFF, CREATION_OPTIONS,
+    from h3_quality import (QUALITY_OFF, QUALITY_CHECK, QUALITY_REPAIR, QUALITY_OPTIONS,
+                            CREATION_OFF, CREATION_CAUSAL, CREATION_OPTIONS,
                             normalize_quality, normalize_creation, creation_instruction)
     from quality_pipeline import h3_quality_result, retained_draft_provider
 from PIL import Image
@@ -145,8 +147,11 @@ try:
         LOCAL_COMFY_MEMORY_POLICIES,
         LOCAL_REASONING_OPTIONS,
         LOCAL_THINK_OFF,
+        LOCAL_THINK_ON,
         LOCAL_THINK_OPTIONS,
         LOCAL_UNLOAD_AFTER_RUN,
+        LOCAL_KEEP_WARM,
+        LOCAL_IDLE_TTL,
         LOCAL_UNLOAD_POLICIES,
         list_gguf_models,
         list_mmproj_models,
@@ -175,8 +180,11 @@ except ImportError:
         LOCAL_COMFY_MEMORY_POLICIES,
         LOCAL_REASONING_OPTIONS,
         LOCAL_THINK_OFF,
+        LOCAL_THINK_ON,
         LOCAL_THINK_OPTIONS,
         LOCAL_UNLOAD_AFTER_RUN,
+        LOCAL_KEEP_WARM,
+        LOCAL_IDLE_TTL,
         LOCAL_UNLOAD_POLICIES,
         list_gguf_models,
         list_mmproj_models,
@@ -189,6 +197,7 @@ except ImportError:
 
 try:
     from .case_templates import (
+        CASE_TEMPLATES,
         CASE_TEMPLATE_OPTIONS,
         NO_CASE_TEMPLATE,
         canonical_case_template_label,
@@ -196,6 +205,7 @@ try:
     )
 except ImportError:
     from case_templates import (
+        CASE_TEMPLATES,
         CASE_TEMPLATE_OPTIONS,
         NO_CASE_TEMPLATE,
         canonical_case_template_label,
@@ -210,6 +220,7 @@ MODEL_ID = "bytedance/doubao-seed-evolving"
 AI_WORKSHOP_API_BASE_URL = "https://ai.t8star.org"
 AI_WORKSHOP_CHAT_COMPLETIONS_URL = f"{AI_WORKSHOP_API_BASE_URL}/v1/chat/completions"
 AI_WORKSHOP_DEFAULT_MODEL = "gemini-3.5-flash"
+CASE_TEMPLATE_UI_OPTIONS = [NO_CASE_TEMPLATE, *[str(template["id"]) for template in CASE_TEMPLATES]]
 CUSTOM_MODEL_OPTION = "Custom（自定义）"
 AI_WORKSHOP_MODEL_OPTIONS = [AI_WORKSHOP_DEFAULT_MODEL, CUSTOM_MODEL_OPTION]
 MAX_FILE_BYTES = 50 * 1024 * 1024
@@ -225,17 +236,29 @@ SEEDANCE_CHAT_RETRYABLE_STATUS_CODES = frozenset({500, 502, 503, 504, 520, 521, 
 
 TASK_TYPES = ["T2VA", "I2VA", "FL2VA", "L2VA", "Ref2VA"]
 TASK_TYPE_LABELS = {
-    "T2VA": "T2VA（文生音视频）",
-    "I2VA": "I2VA（首帧图生音视频）",
-    "FL2VA": "FL2VA（首尾帧生音视频）",
-    "L2VA": "L2VA（尾帧图生音视频）",
-    "Ref2VA": "Ref2VA（参考图/视频生音视频）",
+    "T2VA": "T2VA (Text-to-Video and Audio)",
+    "I2VA": "I2VA (First-Frame Image-to-Video and Audio)",
+    "FL2VA": "FL2VA (First/Last-Frame Image-to-Video and Audio)",
+    "L2VA": "L2VA (Last-Frame Image-to-Video and Audio)",
+    "Ref2VA": "Ref2VA (Reference Image/Video-to-Video and Audio)",
 }
-TASK_TYPE_ALIASES = {label: task_type for task_type, label in TASK_TYPE_LABELS.items()}
+TASK_TYPE_ALIASES = {
+    **{label: task_type for task_type, label in TASK_TYPE_LABELS.items()},
+    "T2VA（文生音视频）": "T2VA",
+    "I2VA（首帧图生音视频）": "I2VA",
+    "FL2VA（首尾帧生音视频）": "FL2VA",
+    "L2VA（尾帧图生音视频）": "L2VA",
+    "Ref2VA（参考图/视频生音视频）": "Ref2VA",
+}
 REWRITE_MODES = ["strict", "balanced", "creative"]
 MODE_TEMPERATURES = {"strict": 0.2, "balanced": 0.7, "creative": 1.2}
 OUTPUT_LANGUAGES = ["中文", "English"]
+OUTPUT_LANGUAGE_UI_OPTIONS = ["Chinese", "English"]
 PROMPT_MODES = ["官方增强", "参考模板融合"]
+PROMPT_MODE_UI_LABELS = {
+    "Official Enhancement": "官方增强",
+    "Reference Template Fusion": "参考模板融合",
+}
 OFFICIAL_SKILL_SOURCE_SHA = "d21241f0a4b3acbb34c97dae47fa417b7065e438"
 OFFICIAL_SKILL_TREE_SHA256 = "b6c4af89b79c044efc8c05865d52cee2cd726ec69c70a6770a707ecf1b18ba89"
 OFFICIAL_CREATIVE_SKILLS_SOURCE_SHA = "743d51e83329cbae6c7694f1c7b89576e7c25e07"
@@ -244,6 +267,10 @@ OFFICIAL_MV_SKILL_VERSION = "0.6.6"
 COMPAT_SKILL_PROFILE = "现有兼容（保留中英文）"
 STRICT_SKILL_PROFILE = "官方 Skill 严格（全英文协议）"
 OFFICIAL_SKILL_PROFILES = [COMPAT_SKILL_PROFILE, STRICT_SKILL_PROFILE]
+OFFICIAL_SKILL_PROFILE_UI_LABELS = {
+    "Compatibility (Preserve Chinese/English)": COMPAT_SKILL_PROFILE,
+    "Strict Official Skill (English-Only Protocol)": STRICT_SKILL_PROFILE,
+}
 NO_CREATIVE_PRESET = "无（仅核心规则）"
 AUTO_CREATIVE_PRESET = "AUTO（根据意图判断）"
 MV_CREATIVE_PRESET = "音乐 MV 动态字幕（官方）"
@@ -261,12 +288,65 @@ CREATIVE_PRESET_OPTIONS = [
     "立体纸艺停格讲解",
     "手绘实拍融合",
 ]
+CREATIVE_PRESET_UI_LABELS = {
+    "No Preset (Core Rules Only)": NO_CREATIVE_PRESET,
+    "AUTO (Infer from User Intent)": AUTO_CREATIVE_PRESET,
+    "Minimalist Product Advertisement": "极简产品广告",
+    "3D Animation Short": "3D 动画短片",
+    "Brand Promotional Video": "品牌宣传短片",
+    "Official Music Video Kinetic Typography": MV_CREATIVE_PRESET,
+    "Two-Player Co-op Game Intro": "双人合作游戏开场",
+    "Paper-Collage Explainer": "纸拼贴讲解",
+    "Papercraft Stop-Motion Explainer": "立体纸艺停格讲解",
+    "Hand-Drawn and Live-Action Fusion": "手绘实拍融合",
+}
+CREATIVE_PRESET_UI_OPTIONS = list(CREATIVE_PRESET_UI_LABELS)
 AUTO_SHOT_COUNT = "AUTO（系统自动判断）"
+AUTO_SHOT_COUNT_UI_LABEL = "AUTO (System Decides)"
 SHOT_COUNT_OPTIONS = [AUTO_SHOT_COUNT] + [str(count) for count in range(1, 21)]
 SEEDANCE_API_MODE = "贞贞平价小屋（推荐）"
 AI_WORKSHOP_API_MODE = "贞贞的AI工坊（图片/视频）"
 OPENAI_API_MODE = "OpenAI兼容接口（备用）"
 API_MODES = [SEEDANCE_API_MODE, AI_WORKSHOP_API_MODE, OPENAI_API_MODE, LOCAL_QWEN_API_MODE]
+API_MODE_UI_LABELS = {
+    "Seedance (Recommended)": SEEDANCE_API_MODE,
+    "T8 AI Workshop (Images / Video)": AI_WORKSHOP_API_MODE,
+    "OpenAI-Compatible API (Backup)": OPENAI_API_MODE,
+    "Local GGUF (llama.cpp / Qwen, Offline)": LOCAL_QWEN_API_MODE,
+}
+AI_WORKSHOP_MODEL_UI_OPTIONS = [AI_WORKSHOP_DEFAULT_MODEL, "Custom"]
+AI_WORKSHOP_CUSTOM_MODEL_UI_LABEL = "Custom"
+QUALITY_UI_LABELS = {
+    "Off (Preserve Existing Behavior)": QUALITY_OFF,
+    "Check Only": QUALITY_CHECK,
+    "Repair (At Most One Correction)": QUALITY_REPAIR,
+}
+CREATION_UI_LABELS = {
+    "Original Orchestration": CREATION_OFF,
+    "Causal Action Refinement": CREATION_CAUSAL,
+}
+DIRECTOR_UI_LABELS = {
+    "Off": DIRECTOR_OFF,
+    "Continuous Combat Long Take": "continuous_combat",
+    "High-Density Continuous Combat": "high_density_combat",
+    "Cinematic Gunfight Direction": "cinematic_gunfight",
+    "Ning - Drama and Action": "ning_wenwu",
+    "Dramatic Scene - Relationships and Subtext": "drama_scene",
+    "Situational Drama - Setup and Payoff": "situational_drama",
+}
+LOCAL_THINK_UI_LABELS = {
+    "Off (Recommended, Faster)": LOCAL_THINK_OFF,
+    "On (Higher Quality)": LOCAL_THINK_ON,
+}
+LOCAL_UNLOAD_UI_LABELS = {
+    "Unload After Run (Recommended)": LOCAL_UNLOAD_AFTER_RUN,
+    "Keep Loaded": LOCAL_KEEP_WARM,
+    "Unload After 10 Minutes Idle": LOCAL_IDLE_TTL,
+}
+LOCAL_COMFY_MEMORY_UI_LABELS = {
+    "AUTO (Release ComfyUI Models if VRAM Is Low)": LOCAL_COMFY_MEMORY_POLICIES[0],
+    "Keep ComfyUI Models Loaded": LOCAL_COMFY_MEMORY_POLICIES[1],
+}
 LEGACY_UI_VALUES = {"展开", "收起", "提交当前工作流", "打开 Seedance 注册页面"}
 API_KEY_PATTERN = re.compile(r"\bsk-[A-Za-z0-9_-]{16,}\b")
 
@@ -405,6 +485,7 @@ def _auto_requests_mv(prompt: str, reference_context: str, constraints: str) -> 
 
 def _canonical_creative_preset(creative_preset: Any) -> str:
     value = str(creative_preset or NO_CREATIVE_PRESET)
+    value = CREATIVE_PRESET_UI_LABELS.get(value, value)
     return CREATIVE_PRESET_ALIASES.get(value, value)
 
 
@@ -534,9 +615,53 @@ def _canonical_task_type(task_type: str) -> str:
     return TASK_TYPE_ALIASES.get(value, value)
 
 
+def _canonical_output_language(value: Any) -> str:
+    text = str(value or "中文")
+    return "中文" if text == "Chinese" else text
+
+
+def _canonical_prompt_mode(value: Any) -> str:
+    text = str(value or "官方增强")
+    return PROMPT_MODE_UI_LABELS.get(text, text)
+
+
+def _canonical_skill_profile(value: Any) -> str:
+    text = str(value or COMPAT_SKILL_PROFILE)
+    return OFFICIAL_SKILL_PROFILE_UI_LABELS.get(text, text)
+
+
+def _canonical_api_mode(value: Any) -> str:
+    text = str(value or SEEDANCE_API_MODE)
+    return API_MODE_UI_LABELS.get(text, text)
+
+
+def _canonical_ai_workshop_model(value: Any) -> str:
+    text = str(value or AI_WORKSHOP_DEFAULT_MODEL)
+    return CUSTOM_MODEL_OPTION if text == AI_WORKSHOP_CUSTOM_MODEL_UI_LABEL else text
+
+
+def _canonical_quality_mode(value: Any) -> str:
+    text = str(value or QUALITY_OFF)
+    return QUALITY_UI_LABELS.get(text, text)
+
+
+def _canonical_creation_mode(value: Any) -> str:
+    text = str(value or CREATION_OFF)
+    return CREATION_UI_LABELS.get(text, text)
+
+
+def _canonical_director_skill(value: Any) -> Any:
+    return DIRECTOR_UI_LABELS.get(value, value) if isinstance(value, str) else value
+
+
+def _canonical_local_option(value: Any, labels: dict[str, str], default: str) -> str:
+    text = str(value or default)
+    return labels.get(text, text)
+
+
 def _normalize_shot_count(shot_count: Any) -> int:
     value = str(shot_count if shot_count is not None else "").strip()
-    if value in {"", "0", "AUTO", "auto", "自动", AUTO_SHOT_COUNT}:
+    if value in {"", "0", "AUTO", "auto", "自动", AUTO_SHOT_COUNT, AUTO_SHOT_COUNT_UI_LABEL}:
         return 0
     try:
         count = int(value)
@@ -1703,6 +1828,18 @@ def enhance_prompt(
     quality_mode: Any = QUALITY_OFF,
     creation_mode: Any = CREATION_OFF,
 ) -> str:
+    output_language = _canonical_output_language(output_language)
+    prompt_mode = _canonical_prompt_mode(prompt_mode)
+    official_skill_profile = _canonical_skill_profile(official_skill_profile)
+    api_mode = _canonical_api_mode(api_mode)
+    ai_workshop_model = _canonical_ai_workshop_model(ai_workshop_model)
+    quality_mode = _canonical_quality_mode(quality_mode)
+    creation_mode = _canonical_creation_mode(creation_mode)
+    local_think_mode = _canonical_local_option(local_think_mode, LOCAL_THINK_UI_LABELS, LOCAL_THINK_OFF)
+    local_unload_policy = _canonical_local_option(local_unload_policy, LOCAL_UNLOAD_UI_LABELS, LOCAL_UNLOAD_AFTER_RUN)
+    local_comfy_memory_policy = _canonical_local_option(
+        local_comfy_memory_policy, LOCAL_COMFY_MEMORY_UI_LABELS, LOCAL_COMFY_MEMORY_POLICIES[0]
+    )
     try:
         quality_mode = normalize_quality(quality_mode)
         creation_mode = normalize_creation(creation_mode)
@@ -1711,7 +1848,7 @@ def enhance_prompt(
     task_type = _canonical_task_type(task_type)
     shot_count = _normalize_shot_count(shot_count)
     try:
-        director_skill, shot_count = prepare_director_skill(director_skill, shot_count)
+        director_skill, shot_count = prepare_director_skill(_canonical_director_skill(director_skill), shot_count)
     except DirectionalSkillError as error:
         raise PromptEnhancerError(str(error)) from error
     directional = director_skill != DIRECTOR_OFF
@@ -1725,11 +1862,13 @@ def enhance_prompt(
         raise PromptEnhancerError(
             "description_word_target must be 0 (auto) or between 80 and 1000."
         ) from error
-    output_language = str(output_language or "中文")
-    prompt_mode = str(prompt_mode or "官方增强")
-    official_skill_profile = str(official_skill_profile or COMPAT_SKILL_PROFILE)
+    output_language = _canonical_output_language(output_language)
+    prompt_mode = _canonical_prompt_mode(prompt_mode)
+    official_skill_profile = _canonical_skill_profile(official_skill_profile)
     creative_preset = NO_CREATIVE_PRESET if directional else _canonical_creative_preset(creative_preset)
     try:
+        if str(case_template or "") == "无（不使用 T8 案例）":
+            case_template = NO_CASE_TEMPLATE
         case_template = NO_CASE_TEMPLATE if directional else canonical_case_template_label(case_template)
     except ValueError as exc:
         raise PromptEnhancerError(f"Unsupported case_template: {case_template}") from exc
@@ -1770,7 +1909,7 @@ def enhance_prompt(
     custom_model = optional_texts["custom_model"]
     if API_KEY_PATTERN.search(str(prompt or "")):
         raise PromptEnhancerError("Remove the API-key-like secret from prompt before running this node.")
-    effective_api_mode = str(api_mode or SEEDANCE_API_MODE)
+    effective_api_mode = _canonical_api_mode(api_mode)
     if directional:
         prompt_mode = "官方增强"
     media_plan = _validate_inputs(
@@ -2059,8 +2198,8 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
     @classmethod
     def define_schema(cls):
         return io.Schema(
-            node_id="MiniMaxH3PromptEnhancerT8",
-            display_name="MiniMax H3 Prompt Enhancer (Cloud / Local GGUF)",
+            node_id="MiniMaxH3PromptEnhancerT8 - SOTAI",
+            display_name="MiniMax H3 Prompt Enhancer - SOTAI (Cloud / Local GGUF)",
             category="T8/MiniMax H3",
             description=(
                 "Uses one selected cloud or local visual LLM channel to rewrite a prompt into the official MiniMax-H3 "
@@ -2070,7 +2209,7 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
             inputs=[
                 io.String.Input(
                     "prompt",
-                    display_name="视频创意 / 提示词（必填）",
+                    display_name="Video Idea / Prompt (Required)",
                     multiline=True,
                     dynamic_prompts=True,
                     default="",
@@ -2078,48 +2217,48 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                 ),
                 io.Combo.Input(
                     "task_type",
-                    display_name="生成类型",
+                    display_name="Generation Type",
                     options=list(TASK_TYPE_LABELS.values()),
                     default=TASK_TYPE_LABELS["T2VA"],
                 ),
                 io.Int.Input(
                     "duration_seconds",
-                    display_name="目标时长（秒）",
+                    display_name="Target Duration (Seconds)",
                     default=5,
                     min=1,
                     step=1,
-                    tooltip="输入任意正整数时长；节点不设上限。实际生成时长仍取决于下游视频模型或工作流。",
+                    tooltip="Enter any positive integer. This node sets no upper limit; actual generation duration depends on the downstream video model or workflow.",
                 ),
                 io.Combo.Input(
                     "shot_count",
-                    display_name="镜头数量",
-                    options=SHOT_COUNT_OPTIONS,
-                    default=AUTO_SHOT_COUNT,
-                    tooltip="AUTO 由模型结合时长、内容与节奏判断；1-20 要求输出对应数量的 [Shot N]。",
+                    display_name="Shot Count",
+                    options=[AUTO_SHOT_COUNT_UI_LABEL, *[str(count) for count in range(1, 21)]],
+                    default=AUTO_SHOT_COUNT_UI_LABEL,
+                    tooltip="AUTO lets the model decide based on duration, content, and pacing. Values 1-20 require the corresponding number of [Shot N] entries.",
                 ),
                 io.Combo.Input(
                     "rewrite_mode",
-                    display_name="改写模式",
+                    display_name="Rewrite Mode",
                     options=REWRITE_MODES,
                     default="balanced",
                     tooltip="Controls enrichment only: strict is conservative, balanced fills details, creative expands style. This is separate from the official Skill language profile.",
                 ),
                 io.Int.Input(
                     "description_word_target",
-                    display_name="目标长度（0=自动）",
+                    display_name="Description Length Target (0 = Auto)",
                     default=0,
                     min=0,
                     max=1000,
                     step=10,
                     tooltip="0 = automatic. Compatibility mode uses Chinese characters or English words; official strict mode always uses English words.",
                 ),
-                io.Image.Input("first_frame", optional=True, tooltip="Required by I2VA and FL2VA."),
-                io.Image.Input("last_frame", optional=True, tooltip="Required by FL2VA and L2VA."),
+                io.Image.Input("first_frame", display_name="First Frame", optional=True, tooltip="Required for I2VA and FL2VA."),
+                io.Image.Input("last_frame", display_name="Last Frame", optional=True, tooltip="Required for FL2VA and L2VA."),
                 io.Autogrow.Input(
                     "reference_images",
                     optional=True,
                     template=io.Autogrow.TemplatePrefix(
-                        input=io.Image.Input("reference_image", tooltip="Ref2VA reference image."),
+                        input=io.Image.Input("reference_image", tooltip="Reference image for Ref2VA."),
                         prefix="reference_image_",
                         min=0,
                         max=9,
@@ -2129,7 +2268,7 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                     "reference_videos",
                     optional=True,
                     template=io.Autogrow.TemplatePrefix(
-                        input=io.Video.Input("reference_video", tooltip="Ref2VA temporal reference video (2-15 seconds)."),
+                        input=io.Video.Input("reference_video", tooltip="Temporal reference video for Ref2VA (2-15 seconds)."),
                         prefix="reference_video_",
                         min=0,
                         max=3,
@@ -2137,21 +2276,21 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                 ),
                 io.String.Input(
                     "reference_context",
-                    display_name="参考素材补充（可选）",
+                    display_name="Reference Context (Optional)",
                     optional=True,
                     multiline=True,
                     default="",
                     advanced=True,
-                    tooltip="Supplemental identity/relationship facts or narrow reference roles, for example character, scene, or typography-only references.",
+                    tooltip="Supplemental identity or relationship details, or specific reference roles such as character, scene, or typography.",
                 ),
                 io.String.Input(
                     "constraints",
-                    display_name="硬性要求（可选）",
+                    display_name="Hard Constraints (Optional)",
                     optional=True,
                     multiline=True,
                     default="",
                     advanced=True,
-                    tooltip="Content that must be preserved or must not be added/changed, including exact lyrics, text safety, or forbidden transitions.",
+                    tooltip="Content that must be preserved or must not be added or changed, such as exact lyrics, text restrictions, or forbidden transitions.",
                 ),
                 io.String.Input(
                     "api_key",
@@ -2161,56 +2300,56 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                     force_input=True,
                     tooltip="Accepts a connected STRING or the masked field below. A connected value takes priority. Environment fallback depends on API mode.",
                 ),
-                io.Combo.Input("output_language", display_name="输出语言", options=OUTPUT_LANGUAGES, default="中文"),
-                io.Combo.Input("prompt_mode", display_name="提示词模式", options=PROMPT_MODES, default="官方增强"),
+                io.Combo.Input("output_language", display_name="Output Language", options=OUTPUT_LANGUAGE_UI_OPTIONS, default="Chinese"),
+                io.Combo.Input("prompt_mode", display_name="Prompt Mode", options=list(PROMPT_MODE_UI_LABELS), default="Official Enhancement"),
                 io.Combo.Input(
                     "official_skill_profile",
-                    display_name="官方 Skill 协议",
-                    options=OFFICIAL_SKILL_PROFILES,
-                    default=COMPAT_SKILL_PROFILE,
-                    tooltip="兼容模式保留当前中英文正文；官方严格模式强制所有说明字段使用英文，仅原文对白、歌词和可见文字保留原语言。",
+                    display_name="Official Skill Profile",
+                    options=list(OFFICIAL_SKILL_PROFILE_UI_LABELS),
+                    default="Compatibility (Preserve Chinese/English)",
+                    tooltip="Compatibility mode preserves the selected Chinese or English prose. Strict mode requires English in all descriptive fields; only original dialogue, lyrics, and visible text retain their source language.",
                 ),
                 io.Combo.Input(
                     "creative_preset",
-                    display_name="MiniMax 官方创意预设",
-                    options=CREATIVE_PRESET_OPTIONS,
-                    default=NO_CREATIVE_PRESET,
-                    tooltip="AUTO 或八个 MiniMax 官方场景写作预设。音乐 MV 动态字幕预设来自官方 music-video-subtitle-generator v0.6.6；仅使用用户给出的歌词/节拍事实，或在用户明确授权时创作短篇原创歌词，不分析音频。预设只影响写法，不执行生成、剪辑或外部工作流。",
+                    display_name="MiniMax Official Creative Preset",
+                    options=CREATIVE_PRESET_UI_OPTIONS,
+                    default="No Preset (Core Rules Only)",
+                    tooltip="AUTO or one of eight official MiniMax scene-writing presets. The music-video subtitle preset is based on music-video-subtitle-generator v0.6.6. It uses only user-provided lyrics and rhythm details; original lyrics are written only when explicitly authorized. No audio analysis, generation, editing, or external workflow is performed.",
                 ),
                 io.Combo.Input(
                     "case_template",
-                    display_name="非官方模板（案例 / 社区 Skill）",
-                    options=CASE_TEMPLATE_OPTIONS,
+                    display_name="Unofficial Template (Case / Community Skill)",
+                    options=CASE_TEMPLATE_UI_OPTIONS,
                     default=NO_CASE_TEMPLATE,
-                    tooltip="选择后显示用途、输入格式、推荐示例、结构锚点和本地 GIF。迁移 Creative DNA 与因果节奏，不复制源人物、剧情、文案、镜头表或媒体。",
+                    tooltip="Selection displays the purpose, input format, recommended example, structural anchors, and local GIF. Adapt the creative DNA and causal pacing without copying source characters, plot, copy, shot lists, or media.",
                 ),
                 io.String.Input(
                     "reference_template",
-                    display_name="参考模板（参考模式必填）",
+                    display_name="Reference Template (Required in Template Mode)",
                     optional=True,
                     multiline=True,
                     default="",
                     tooltip="Provides shot structure, pacing, camera, style, and sound references. The user's prompt and media remain authoritative.",
                 ),
-                io.Combo.Input("api_mode", display_name="API 模式", options=API_MODES, default=SEEDANCE_API_MODE),
+                io.Combo.Input("api_mode", display_name="API Mode", options=list(API_MODE_UI_LABELS), default="Seedance (Recommended)"),
                 io.Combo.Input(
                     "ai_workshop_model",
-                    display_name="AI工坊模型",
-                    options=AI_WORKSHOP_MODEL_OPTIONS,
+                    display_name="AI Workshop Model",
+                    options=AI_WORKSHOP_MODEL_UI_OPTIONS,
                     default=AI_WORKSHOP_DEFAULT_MODEL,
-                    tooltip="仅用于贞贞的AI工坊。默认 gemini-3.5-flash；选择 Custom 后填写下方模型 ID。",
+                    tooltip="Only used with T8 AI Workshop. Defaults to gemini-3.5-flash. Select Custom to enter a model ID below.",
                 ),
                 io.String.Input(
                     "custom_model",
-                    display_name="自定义模型 ID",
+                    display_name="Custom Model ID",
                     optional=True,
                     default="",
                     socketless=True,
-                    tooltip="OpenAI兼容模式必填；AI工坊选择 Custom 时使用。填写供应商模型列表中的完整 ID。",
+                    tooltip="Required for OpenAI-compatible mode or when Custom is selected for AI Workshop. Enter the full ID from the provider's model list.",
                 ),
                 io.String.Input(
                     "openai_base_url",
-                    display_name="OpenAI兼容 Base URL",
+                    display_name="OpenAI-Compatible Base URL",
                     optional=True,
                     default="",
                     socketless=True,
@@ -2218,58 +2357,58 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                 ),
                 io.String.Input(
                     "openai_video_urls",
-                    display_name="OpenAI 视频素材 URL（可选）",
+                    display_name="OpenAI Video URLs (Optional)",
                     optional=True,
                     multiline=True,
                     default="",
                     socketless=True,
-                    tooltip="每行一个，按已连接 VIDEO 顺序以 video_url 透传（仅用于明确支持视频部件的渠道）。未填写或未覆盖的视频自动抽帧为 image_url（适配 llama.cpp 等仅图像端点）。图片始终内联 Base64。",
+                    tooltip="Enter one URL per line in the order of connected VIDEO inputs. URLs are passed as video_url only to providers that explicitly support video parts. Other videos are sampled into image_url frames for image-only endpoints such as llama.cpp. Images are always sent inline as Base64.",
                 ),
                 io.Int.Input(
                     "seed",
-                    display_name="随机种子",
+                    display_name="Random Seed",
                     optional=True,
                     default=0,
                     min=0,
                     max=0xffffffffffffffff,
                     control_after_generate=True,
                     tooltip=(
-                        "控制 ComfyUI 重跑，并把当前值作为提示词变体标识。"
-                        "供应商未公开 Chat Completions 的确定性种子参数。"
+                        "Controls ComfyUI reruns and serves as a prompt-variation identifier. "
+                        "The provider does not expose a deterministic seed parameter for Chat Completions."
                     ),
                 ),
                 io.Combo.Input(
                     "local_model",
-                    display_name="本地 GGUF 主模型",
+                    display_name="Local GGUF Main Model",
                     options=list_gguf_models(),
                     default=DEFAULT_MODEL_FILENAME,
                     optional=True,
                     advanced=True,
-                    tooltip="仅本地模式使用。递归扫描 ComfyUI/models/LLM 及其任意子目录。",
+                    tooltip="Used only in local mode. Recursively scans ComfyUI/models/LLM and its subdirectories.",
                 ),
                 io.Combo.Input(
                     "local_mmproj",
-                    display_name="本地视觉投影器",
+                    display_name="Local Vision Projector",
                     options=list_mmproj_models(),
                     default=AUTO_MMPROJ,
                     optional=True,
                     advanced=True,
-                    tooltip="仅本地图片/视频采样帧分析使用；AUTO 会按 GGUF 元数据匹配主模型。",
+                    tooltip="Used only for local image and sampled-video-frame analysis. AUTO matches the projector to the main model using GGUF metadata.",
                 ),
                 io.Int.Input(
                     "local_context_size",
-                    display_name="本地上下文 Token",
+                    display_name="Local Context Tokens",
                     default=DEFAULT_CONTEXT_SIZE,
                     min=8192,
                     max=65536,
                     step=4096,
                     optional=True,
                     advanced=True,
-                    tooltip="输入文字、视觉部件、思考和最终正文共享此上下文；数值越大，占用的内存/显存越多。",
+                    tooltip="Input text, visual parts, reasoning, and final output share this context. Larger values use more memory and VRAM.",
                 ),
                 io.Int.Input(
                     "local_max_tokens",
-                    display_name="本地单次生成 Token（含思考）",
+                    display_name="Local Generation Token Limit (Including Reasoning)",
                     default=DEFAULT_MAX_TOKENS,
                     min=256,
                     max=MAX_OUTPUT_TOKENS,
@@ -2277,21 +2416,21 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                     optional=True,
                     advanced=True,
                     tooltip=(
-                        "这是思考过程与最终提示词的生成上限。输入文字及已连接的图/视频会优先保留，"
-                        "必要时自动下调本次实际生成上限；如需同时保留多图和较长输出，请提高本地上下文 Token。"
+                        "This limits tokens for reasoning and the final prompt. Input text and connected images or videos are prioritized; "
+                        "the effective generation limit may be reduced when needed. Increase the local context size to retain multiple images and longer output."
                     ),
                 ),
                 io.Combo.Input(
                     "local_think_mode",
-                    display_name="本地思考模式",
-                    options=LOCAL_THINK_OPTIONS,
-                    default=LOCAL_THINK_OFF,
+                    display_name="Local Reasoning Mode",
+                    options=list(LOCAL_THINK_UI_LABELS),
+                    default="Off (Recommended, Faster)",
                     optional=True,
                     advanced=True,
                 ),
                 io.Combo.Input(
                     "local_reasoning_effort",
-                    display_name="本地推理强度",
+                    display_name="Local Reasoning Effort",
                     options=LOCAL_REASONING_OPTIONS,
                     default="medium",
                     optional=True,
@@ -2299,34 +2438,34 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                 ),
                 io.Float.Input(
                     "local_video_sample_fps",
-                    display_name="本地视频采样率（帧/秒）",
+                    display_name="Local Video Sampling Rate (FPS)",
                     default=DEFAULT_VIDEO_SAMPLE_FPS,
                     min=0.25,
                     max=8.0,
                     step=0.25,
                     optional=True,
                     advanced=True,
-                    tooltip="只分析按真实时间戳采样的画面，不读取视频音轨。",
+                    tooltip="Analyzes only frames sampled at their actual timestamps. The video audio track is not read.",
                 ),
                 io.Combo.Input(
                     "local_unload_policy",
-                    display_name="本地模型卸载策略",
-                    options=LOCAL_UNLOAD_POLICIES,
-                    default=LOCAL_UNLOAD_AFTER_RUN,
+                    display_name="Local Model Unload Policy",
+                    options=list(LOCAL_UNLOAD_UI_LABELS),
+                    default="Unload After Run (Recommended)",
                     optional=True,
                     advanced=True,
                 ),
                 io.Combo.Input(
                     "local_comfy_memory_policy",
-                    display_name="本地加载前显存策略",
-                    options=LOCAL_COMFY_MEMORY_POLICIES,
-                    default=LOCAL_COMFY_MEMORY_POLICIES[0],
+                    display_name="ComfyUI VRAM Policy Before Local Load",
+                    options=list(LOCAL_COMFY_MEMORY_UI_LABELS),
+                    default="AUTO (Release ComfyUI Models if VRAM Is Low)",
                     optional=True,
                     advanced=True,
                 ),
                 io.String.Input(
                     "recovery_slot",
-                    display_name="恢复槽（内部）",
+                    display_name="Recovery Slot (Internal)",
                     optional=True,
                     default="",
                     socketless=True,
@@ -2334,7 +2473,7 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                 ),
                 io.String.Input(
                     "recovery_action",
-                    display_name="恢复动作（内部）",
+                    display_name="Recovery Action (Internal)",
                     optional=True,
                     default=RECOVERY_ACTION_NORMAL,
                     socketless=True,
@@ -2342,34 +2481,34 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
                 ),
                 T8PerformanceDirectorConfigIO.Input(
                     "performance_director_config",
-                    display_name="表演导演配置（可选）",
+                    display_name="Performance Director Config (Optional)",
                     optional=True,
-                    tooltip="不连接时为条件式 AUTO；可连接 T8 Performance Director Config 选择强化或关闭。不会新增付费请求。",
+                    tooltip="Uses conditional AUTO when unconnected. Connect a T8 Performance Director Config to enable or disable it. No additional paid request is made.",
                 ),
                 T8ProviderConfigIO.Input(
                     "provider_config",
-                    display_name="共享 LLM 渠道配置（可选）",
+                    display_name="Shared LLM Provider Config (Optional)",
                     optional=True,
-                    tooltip="不连接时完全使用本节点原有字段；连接后使用共享配置，断开即恢复。",
+                    tooltip="Uses this node's existing fields when unconnected. Uses the shared configuration when connected and reverts when disconnected.",
                 ),
                 T8CharacterPerformanceBibleIO.Input(
                     "character_performance_bible",
-                    display_name="角色表演圣经（可选）",
+                    display_name="Character Performance Bible (Optional)",
                     optional=True,
-                    tooltip="连接 T8 Character Performance Bible；不新增请求，只向本次人物表演编译提供权威目标、阻力、策略和身体惯性。",
+                    tooltip="Connect a T8 Character Performance Bible to provide authoritative objectives, resistance, tactics, and physical behavior for this performance. No additional request is made.",
                 ),
-                io.Combo.Input("relay_mode", display_name="输出模式 / Output mode", options=[NORMAL, RELAY], default=NORMAL, optional=True),
-                io.Int.Input("relay_event_count", display_name="Relay 事件数（0=自动；非镜头数）", default=0, min=0, max=32, optional=True),
-                io.Float.Input("relay_duration_seconds", display_name="Relay 精确秒数（0=沿用目标时长）", default=0, min=0, step=0.01, optional=True),
-                io.String.Input("relay_time_ranges", display_name="Relay 指定时间（选填）", default="", multiline=True, optional=True,
-                                tooltip="每行十进制秒 start-end，例如 0-2.5。留空自动安排；填写时必须连续覆盖成片时长。24 FPS，补齐帧只延续结尾。"),
-                io.Combo.Input("director_skill", display_name="定向创作 Skill（T8，非官方） / Directional Skill",
-                               options=DIRECTOR_OPTIONS, default=DIRECTOR_OPTIONS[0], optional=True,
-                               tooltip="默认关闭，保留旧行为。开启时仅暂停其他场景模板，H3格式和用户事实不变；关闭恢复。长镜头需要1或AUTO镜头数。"),
-                io.Combo.Input("quality_mode", display_name="输出质量流程 / Quality", options=QUALITY_OPTIONS,
-                               default=QUALITY_OFF, optional=True, tooltip="Off保留原行为；Check只检查；Repair精确修协议，最多追加1次LLM纠正。失败保留完整稿，详情见脱敏诊断；不代表成片通过。"),
-                io.Combo.Input("creation_mode", display_name="动作编排 / Creation", options=CREATION_OPTIONS,
-                               default=CREATION_OFF, optional=True, tooltip="原有编排不变；因果优化在同一次生成中补动作衔接与状态继承，不新增规划请求，不覆盖原事实、台词、镜头数及结束状态。"),
+                io.Combo.Input("relay_mode", display_name="Output Mode", options=["Standard Enhancement", "Prompt Relay Orchestration"], default="Standard Enhancement", optional=True),
+                io.Int.Input("relay_event_count", display_name="Relay Event Count (0 = Auto; Not Shot Count)", default=0, min=0, max=32, optional=True),
+                io.Float.Input("relay_duration_seconds", display_name="Relay Exact Duration (0 = Use Target Duration)", default=0, min=0, step=0.01, optional=True),
+                io.String.Input("relay_time_ranges", display_name="Relay Time Ranges (Optional)", default="", multiline=True, optional=True,
+                                tooltip="Enter one decimal-seconds start-end range per line, such as 0-2.5. Leave blank for automatic timing. Specified ranges must continuously cover the full clip. 24 FPS; padding only extends the ending."),
+                io.Combo.Input("director_skill", display_name="Directional Creation Skill (T8, Unofficial) / Directional Skill",
+                               options=list(DIRECTOR_UI_LABELS), default="Off", optional=True,
+                               tooltip="Off by default to preserve existing behavior. When enabled, other scene templates are paused; H3 formatting and user facts remain unchanged. Disable it to restore them. Long takes require a shot count of 1 or AUTO."),
+                io.Combo.Input("quality_mode", display_name="Output Quality Workflow / Quality", options=list(QUALITY_UI_LABELS),
+                               default="Off (Preserve Existing Behavior)", optional=True, tooltip="Off preserves existing behavior. Check only reports issues. Repair makes one precise correction request at most. Failed repairs retain the complete draft and provide redacted diagnostics; this does not certify the generated video."),
+                io.Combo.Input("creation_mode", display_name="Action Orchestration / Creation", options=list(CREATION_UI_LABELS),
+                               default="Original Orchestration", optional=True, tooltip="Existing orchestration is unchanged. Causal refinement improves action continuity and state inheritance in the same generation without another planning request or changing facts, dialogue, shot count, or ending state."),
             ],
             outputs=[io.String.Output(display_name="enhanced_prompt"),
                      io.String.Output(display_name="global_prompt"),
@@ -2450,6 +2589,20 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
         quality_mode=QUALITY_OFF,
         creation_mode=CREATION_OFF,
     ) -> io.NodeOutput:
+        relay_mode = {
+            "Standard Enhancement": NORMAL,
+            "Prompt Relay Orchestration": RELAY,
+        }.get(str(relay_mode), relay_mode)
+        task_type = _canonical_task_type(task_type)
+        shot_count = _normalize_shot_count(shot_count)
+        output_language = _canonical_output_language(output_language)
+        prompt_mode = _canonical_prompt_mode(prompt_mode)
+        official_skill_profile = _canonical_skill_profile(official_skill_profile)
+        creative_preset = _canonical_creative_preset(creative_preset)
+        api_mode = _canonical_api_mode(api_mode)
+        ai_workshop_model = _canonical_ai_workshop_model(ai_workshop_model)
+        quality_mode = _canonical_quality_mode(quality_mode)
+        creation_mode = _canonical_creation_mode(creation_mode)
         if relay_mode not in (NORMAL, RELAY):
             raise PromptEnhancerError("Unsupported Relay output mode.")
         relay_enabled = relay_mode == RELAY
@@ -2510,12 +2663,19 @@ class MiniMaxH3PromptEnhancer(io.ComfyNode):
         local_video_sample_fps = merged["local_video_sample_fps"]
         local_unload_policy = merged["local_unload_policy"]
         local_comfy_memory_policy = merged["local_comfy_memory_policy"]
+        local_think_mode = _canonical_local_option(local_think_mode, LOCAL_THINK_UI_LABELS, LOCAL_THINK_OFF)
+        local_unload_policy = _canonical_local_option(local_unload_policy, LOCAL_UNLOAD_UI_LABELS, LOCAL_UNLOAD_AFTER_RUN)
+        local_comfy_memory_policy = _canonical_local_option(
+            local_comfy_memory_policy, LOCAL_COMFY_MEMORY_UI_LABELS, LOCAL_COMFY_MEMORY_POLICIES[0]
+        )
         provider_request_options = merged["provider_request_options"]
         # Invalid directional preflight must not replace a previously paid result.
         try:
             quality_mode = normalize_quality(quality_mode)
             creation_mode = normalize_creation(creation_mode)
-            director_skill, effective_shots = prepare_director_skill(director_skill, _normalize_shot_count(shot_count))
+            director_skill, effective_shots = prepare_director_skill(
+                _canonical_director_skill(director_skill), _normalize_shot_count(shot_count)
+            )
         except (DirectionalSkillError, ValueError) as error:
             raise PromptEnhancerError(str(error)) from error
         metadata = director_metadata(director_skill, language=_effective_output_language(output_language, official_skill_profile),
