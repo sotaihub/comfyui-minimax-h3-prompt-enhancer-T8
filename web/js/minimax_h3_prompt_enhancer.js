@@ -24,6 +24,7 @@ import {
 
 
 const NODE_ID = "MiniMaxH3PromptEnhancerT8";
+const NODE_IDS = [NODE_ID, `${NODE_ID} - SOTAI`];
 const SIGN_UP_URL = "https://api.seedance.nz/sign-up?aff=5f4w";
 const AI_WORKSHOP_SIGN_UP_URL = "https://ai.t8star.org/register?aff=dP7j";
 const LOCAL_SKILL_BUNDLE_URL = "https://github.com/T8mars/minimax-h3-prompt-skill-T8";
@@ -193,6 +194,7 @@ const LOCAL_WIDGET_DEFAULTS = {
 
 
 function setWidgetVisible(widget, visible) {
+    if (!widget) return;
     if (!("t8OriginalType" in widget)) {
         widget.t8OriginalType = widget.type;
         widget.t8OriginalComputeSize = widget.computeSize;
@@ -208,6 +210,13 @@ function setWidgetVisible(widget, visible) {
         widget.element.style.display = visible ? widget.t8OriginalDisplay : "none";
         widget.element.hidden = !visible;
     }
+}
+
+
+function setInputVisible(input, visible) {
+    if (!input) return;
+    if (!("t8OriginalHidden" in input)) input.t8OriginalHidden = Boolean(input.hidden);
+    input.hidden = visible ? input.t8OriginalHidden : true;
 }
 
 
@@ -334,7 +343,7 @@ function addReferenceTemplateBehavior(node, modeWidget, templateWidget) {
 }
 
 
-function addApiModeBehavior(node, modeWidget, baseUrlWidget, videoUrlsWidget, modelWidget, customModelWidget, localWidgets) {
+export function addApiModeBehavior(node, modeWidget, baseUrlWidget, videoUrlsWidget, modelWidget, customModelWidget, localWidgets) {
     const updateModel = () => {
         const workshop = modeWidget.value === AI_WORKSHOP_API_MODE;
         const compatible = modeWidget.value === OPENAI_API_MODE;
@@ -358,7 +367,24 @@ function addApiModeBehavior(node, modeWidget, baseUrlWidget, videoUrlsWidget, mo
         videoUrlsWidget.label = "Video URLs (Optional, One Per Line)";
         setWidgetVisible(baseUrlWidget, compatible);
         setWidgetVisible(videoUrlsWidget, compatible);
-        for (const widget of localWidgets || []) setWidgetVisible(widget, local);
+        for (const widget of localWidgets || []) {
+            setWidgetVisible(widget, local);
+            setInputVisible(
+                node.inputs?.find((input) => input.name === widget.name || input.widget?.name === widget.name),
+                local,
+            );
+        }
+        setInputVisible(
+            node.inputs?.find((input) => input.name === modelWidget.name || input.widget?.name === modelWidget.name),
+            mode === AI_WORKSHOP_API_MODE,
+        );
+        setInputVisible(
+            node.inputs?.find((input) => input.name === "api_key" || input.widget?.name === "api_key"),
+            !local,
+        );
+        for (const widget of [node.t8LocalQwenStatusWidget, node.t8LocalWheelWidget, node.t8LocalPathWidget, node.t8LocalSkillBundleWidget]) {
+            setWidgetVisible(widget, local);
+        }
         updateModel();
         if (node.t8SignUpWidget) {
             setWidgetVisible(node.t8SignUpWidget, !compatible && !local);
@@ -589,10 +615,10 @@ export function configureRelayWidgets(node) {
 }
 
 app.registerExtension({
-    name: "T8.MiniMaxH3PromptEnhancer",
+    name: "T8.MiniMaxH3PromptEnhancer.SOTAI",
 
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name !== NODE_ID) return;
+        if (!NODE_IDS.includes(nodeData.name)) return;
 
         const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
         const originalOnConfigure = nodeType.prototype.onConfigure;
@@ -829,6 +855,7 @@ app.registerExtension({
                 { serialize: false },
             );
             localWheelWidget.serializeValue = () => undefined;
+            this.t8LocalWheelWidget = localWheelWidget;
 
             const localPathWidget = this.addWidget(
                 "button",
@@ -838,6 +865,7 @@ app.registerExtension({
                 { serialize: false },
             );
             localPathWidget.serializeValue = () => undefined;
+            this.t8LocalPathWidget = localPathWidget;
 
             const localSkillBundleWidget = this.addWidget(
                 "button",
@@ -847,6 +875,7 @@ app.registerExtension({
                 { serialize: false },
             );
             localSkillBundleWidget.serializeValue = () => undefined;
+            this.t8LocalSkillBundleWidget = localSkillBundleWidget;
             const relayHelp = this.addWidget("button", "📖 Prompt Relay Wiring Guide", "global / local / time + length",
                 () => window.open(new URL("./docs/h3_prompt_relay.md", import.meta.url).href, "_blank", "noopener,noreferrer"), { serialize: false });
             relayHelp.serializeValue = () => undefined;

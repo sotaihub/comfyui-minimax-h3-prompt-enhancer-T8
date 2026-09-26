@@ -69,7 +69,87 @@ try {
     TEMPLATE_DETAIL_MAX_HEIGHT,
   } = await import("../../web/js/case_template_ui.js");
   const { app } = await import("../../scripts/app.js");
-  const { configureRelayWidgets } = await import("../../web/js/minimax_h3_prompt_enhancer.js");
+  const { addApiModeBehavior, configureRelayWidgets } = await import("../../web/js/minimax_h3_prompt_enhancer.js");
+  const h3Extension = app.extensions.find(extension => extension.name === "T8.MiniMaxH3PromptEnhancer.SOTAI");
+  class H3NodeIdProbe { onNodeCreated() {} }
+  const legacyH3Hook = H3NodeIdProbe.prototype.onNodeCreated;
+  await h3Extension.beforeRegisterNodeDef(H3NodeIdProbe, { name: "MiniMaxH3PromptEnhancerT8" });
+  check(H3NodeIdProbe.prototype.onNodeCreated !== legacyH3Hook, "H3 frontend hooks retain support for the legacy node ID");
+  class H3SotaiNodeIdProbe { onNodeCreated() {} }
+  const sotaiH3Hook = H3SotaiNodeIdProbe.prototype.onNodeCreated;
+  await h3Extension.beforeRegisterNodeDef(H3SotaiNodeIdProbe, { name: "MiniMaxH3PromptEnhancerT8 - SOTAI" });
+  check(H3SotaiNodeIdProbe.prototype.onNodeCreated !== sotaiH3Hook, "H3 frontend hooks attach to the current SOTAI node ID");
+  const makeProviderWidget = (name, value = "") => ({
+    name, value, label: name, type: "text", computeSize: () => [300, 24], element: document.createElement("div"),
+  });
+  const providerMode = makeProviderWidget("api_mode", "Seedance (Recommended)");
+  const providerBaseUrl = makeProviderWidget("openai_base_url", "https://provider.test/v1");
+  const providerVideoUrls = makeProviderWidget("openai_video_urls", "https://video.test/clip.mp4");
+  const providerModel = makeProviderWidget("ai_workshop_model", "gemini-3.5-flash");
+  const providerCustomModel = makeProviderWidget("custom_model", "vendor/custom");
+  const localProviderWidgets = ["local_model", "local_mmproj", "local_context_size", "local_max_tokens"]
+    .map(name => makeProviderWidget(name, `${name}-saved`));
+  const localProviderActions = ["signup", "key", "local-status", "local-wheel", "local-path", "local-skills"]
+    .map(name => makeProviderWidget(name));
+  const providerNode = {
+    widgets: [providerMode, providerBaseUrl, providerVideoUrls, providerModel, providerCustomModel, ...localProviderWidgets, ...localProviderActions],
+    inputs: [
+      { name: "api_key", hidden: false, link: 72 },
+      { name: "ai_workshop_model", hidden: false, link: 73 },
+      { name: "local_model", hidden: false, link: 74 },
+    ],
+    size: [600, 200],
+    computeSize() { return [600, 200 + this.widgets.filter(widget => !widget.hidden).length * 24]; },
+    setSize(size) { this.size = size; },
+    setDirtyCanvas() {},
+  };
+  addApiModeBehavior(
+    providerNode, providerMode, providerBaseUrl, providerVideoUrls,
+    providerModel, providerCustomModel, localProviderWidgets,
+  );
+  Object.assign(providerNode, {
+    t8SignUpWidget: localProviderActions[0],
+    t8ApiKeySecureWidget: localProviderActions[1],
+    t8LocalQwenStatusWidget: localProviderActions[2],
+    t8LocalWheelWidget: localProviderActions[3],
+    t8LocalPathWidget: localProviderActions[4],
+    t8LocalSkillBundleWidget: localProviderActions[5],
+  });
+  providerNode.t8UpdateApiMode();
+  check(providerBaseUrl.hidden && providerVideoUrls.hidden && providerModel.hidden && providerCustomModel.hidden,
+    "Seedance hides non-applicable provider fields");
+  check(localProviderWidgets.every(widget => widget.hidden) && localProviderActions.slice(2).every(widget => widget.hidden),
+    "cloud mode hides local GGUF settings and setup actions");
+  check(providerNode.inputs[1].hidden && providerNode.inputs[2].hidden,
+    "cloud mode hides linked Workshop and local-only input sockets");
+  providerMode.value = "Local GGUF (llama.cpp / Qwen, Offline)";
+  providerMode.callback(providerMode.value);
+  check(localProviderWidgets.every(widget => !widget.hidden) && localProviderActions.slice(2).every(widget => !widget.hidden),
+    "local GGUF mode shows local settings and setup actions");
+  check(providerNode.inputs[0].hidden && providerNode.inputs[0].link === 72 && localProviderActions[1].hidden,
+    "local mode hides API key controls without removing the connected input link");
+  check(!providerNode.inputs[2].hidden && providerNode.inputs[2].link === 74 && providerNode.inputs[1].hidden,
+    "local mode restores only local sockets and preserves provider links");
+  check(providerBaseUrl.value === "https://provider.test/v1" && providerCustomModel.value === "vendor/custom"
+    && localProviderWidgets[0].value === "local_model-saved",
+    "provider switching preserves hidden field values");
+  providerMode.value = "OpenAI-Compatible API (Backup)";
+  providerMode.callback(providerMode.value);
+  check(!providerBaseUrl.hidden && !providerVideoUrls.hidden && !providerCustomModel.hidden && !providerNode.inputs[0].hidden,
+    "OpenAI mode restores API fields and the connected API key input");
+  check(providerNode.inputs[1].hidden && providerNode.inputs[2].hidden,
+    "OpenAI mode keeps local and Workshop input sockets hidden");
+  check(localProviderWidgets.every(widget => widget.hidden) && localProviderActions.slice(2).every(widget => widget.hidden),
+    "OpenAI mode hides local GGUF settings and setup actions");
+  providerMode.value = "T8 AI Workshop (Images / Video)";
+  providerMode.callback(providerMode.value);
+  check(!providerModel.hidden && providerCustomModel.hidden && providerBaseUrl.hidden && providerVideoUrls.hidden,
+    "AI Workshop shows its model selector but hides unrelated provider fields");
+  check(!providerNode.inputs[1].hidden && providerNode.inputs[1].link === 73 && providerNode.inputs[2].hidden,
+    "AI Workshop restores its linked model socket while preserving the connection");
+  providerModel.value = "Custom";
+  providerModel.callback(providerModel.value);
+  check(!providerCustomModel.hidden, "AI Workshop custom model field follows its model selector");
   const relayControls = ["relay_mode", "relay_event_count", "relay_duration_seconds", "relay_time_ranges"]
     .map((name, index) => ({ name, value: index === 0 ? "普通增强 / Normal" : 0, type: "number", computeSize: () => [300, 24], element: document.createElement("div") }));
   const relayNode = { widgets: relayControls, size: [600, 200], computeSize() { return [600, 200 + this.widgets.filter(w => !w.hidden).length * 24]; }, setSize(size) { this.size = size; }, setDirtyCanvas() {} };

@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. Versions follow
 Semantic Versioning and match the versions published to the Comfy Registry.
 
+## [1.24.6] - 2026-09-26
+
+### Fixed
+
+- Register the SOTAI H3 frontend extension under a unique name so its provider
+  visibility hooks load alongside the upstream extension; guard initial
+  provider updates until their action widgets are available.
+
 ## [1.24.5] - 2026-09-23
 
 ### Added
